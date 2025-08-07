@@ -1,0 +1,170 @@
+// ALL API
+// D:\web-dev\nextjs-tut\e-commerce\app\api\users\login\route.js
+import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { serialize } from 'cookie';
+import connectDB from '../../../lib/dbConfig';
+import User from '../../../models/userModel';
+import { generateToken } from '../../../lib/getDataFromToken';
+
+export async function POST(request) {
+    try {
+        await connectDB();
+        const { email, password } = await request.json();
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return NextResponse.json(
+                { error: 'Invalid email or password' },
+                { status: 401 }
+            );
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+            return NextResponse.json(
+                { error: 'Invalid email or password' },
+                { status: 401 }
+            );
+        }
+
+        // FIX: Await the generateToken function since it's async
+        const token = await generateToken(user._id.toString());
+
+        const cookie = serialize('auth_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 3600, // 1 hour
+            path: '/',
+        });
+
+        const response = NextResponse.json({
+            message: 'Login successful',
+            // Optional: You can also return user info if needed
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        });
+        response.headers.set('Set-Cookie', cookie);
+        return response;
+    } catch (error) {
+        console.error('Login error:', error);
+        return NextResponse.json(
+            { error: 'Failed to log in' },
+            { status: 500 }
+        );
+    }
+}
+---------------------------------------------------------------------
+// D:\web-dev\nextjs-tut\e-commerce\app\api\users\logout\route.js
+import { NextResponse } from 'next/server';
+import { serialize } from 'cookie';
+
+export async function POST() {
+    const cookie = serialize('auth_token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: -1, // Expire immediately
+        path: '/',
+    });
+
+    const response = NextResponse.json({ message: 'Logged out successfully' });
+    response.headers.set('Set-Cookie', cookie);
+    return response;
+}
+--------------------------------------------------------------------------------
+// D:\web-dev\nextjs-tut\e-commerce\app\api\users\me\route.js
+import { NextResponse } from 'next/server';
+import connectDB from '../../../lib/dbConfig';
+import User from '../../../models/userModel';
+import { generateToken, verifyToken } from '../../../lib/getDataFromToken';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
+
+const ratelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(20, '1 m'),
+    prefix: 'me_rate_limit',
+});
+
+export async function GET(request) {
+    const token = request.cookies.get('auth_token')?.value;
+    if (!token) {
+        return NextResponse.json({ error: 'No token provided' }, { status: 401 });
+    }
+
+    const decoded = await verifyToken(token);
+    if (!decoded) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const { success, remaining } = await ratelimit.limit(String(decoded.userId));
+    if (!success) {
+        return NextResponse.json(
+            { error: `Too many requests. Limit: 20/min. Remaining: ${remaining}` },
+            { status: 429 }
+        );
+    }
+
+    try {
+        await connectDB();
+        const user = await User.findById(decoded.userId).select('-password');
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ username: user.username, email: user.email });
+    } catch (error) {
+        console.error('API Error:', error);
+        return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
+    }
+}
+-----------------------------------------
+// D:\web-dev\nextjs-tut\e-commerce\app\api\users\signup\route.js
+import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import connect from '../../../lib/dbConfig';
+import User from '../../../models/userModel';
+
+
+export async function POST(request) {
+    try {
+        await connect();
+        const body = await request.json();
+        const { username, email, password } = body;
+
+        // Check for existing user
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        if (existingUser) {
+            return NextResponse.json(
+                { error: 'Email or username already exists' },
+                { status: 400 }
+            );
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create new user
+        const user = new User({ username, email, password: hashedPassword });
+        await user.save();
+
+        return NextResponse.json(
+            { message: 'User created successfully' },
+            { status: 201 }
+        );
+    } catch (error) {
+        console.error(error);
+        return NextResponse.json(
+            { error: 'Failed to log in' },
+            { status: 500 }
+        );
+    }
+}
