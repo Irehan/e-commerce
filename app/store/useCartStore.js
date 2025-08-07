@@ -13,6 +13,8 @@ export const useCartStore = create(persist(
     (set, get) => ({
         cart: [],
 
+        clearCart: () => set({ cart: [] }),
+
         addToCart: (product, selectedSize, selectedColor, quantity = 1) => {
             // Check authentication before adding to cart
             if (!isAuthenticated()) {

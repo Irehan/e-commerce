@@ -1,5 +1,5 @@
-// app\components\Header.jsx
-'use client'
+// D:\web-dev\nextjs-tut\e-commerce\app\components\Header.jsx
+'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSearch, FiUser, FiHeart, FiShoppingBag, FiX, FiMenu, FiLogOut } from 'react-icons/fi';
 import Link from 'next/link';
@@ -7,15 +7,19 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useCartStore } from '../store/useCartStore';
+import useAuthStore from '../store/useAuthStore';
+
+// Import the store instance itself for direct state manipulation
+import { useCartStore as cartStore } from '../store/useCartStore';
 
 const Header = () => {
     const router = useRouter();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const mobileMenuRef = useRef(null);
-    const cart = useCartStore((state) => state.cart); // Place it here
+
+    const { user, clearAuth } = useAuthStore();
+    const cart = useCartStore((state) => state.cart);
     const navLinks = [
         { name: "MEN", href: "/products?category=men" },
         { name: "WOMEN", href: "/products?category=women" },
@@ -24,97 +28,42 @@ const Header = () => {
         { name: "STUDIO", href: "/products?category=studio" },
     ];
 
-    // Function to check authentication status
-    const checkAuthStatus = async () => {
-        try {
-            const response = await fetch('/api/users/me', {
-                credentials: 'include',
-            });
-
-            if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-
-                // ✅ Sync to localStorage if valid
-                localStorage.setItem('auth_user', JSON.stringify(userData));
-            } else {
-                // ❌ If server rejects token, logout client too
-                setUser(null);
-                localStorage.removeItem('auth_user');
-            }
-        } catch (error) {
-            console.error('Auth check failed:', error);
-            setUser(null);
-            localStorage.removeItem('auth_user');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Initial auth check
-    useEffect(() => {
-        checkAuthStatus();
-    }, []);
-
-    // Listen for auth state changes
-    useEffect(() => {
-        const handleAuthChange = (event) => {
-            if (event.detail.type === 'login') {
-                setUser(event.detail.user);
-                setLoading(false);
-            } else if (event.detail.type === 'logout') {
-                setUser(null);
-                setLoading(false);
-            }
-        };
-
-        // Listen for custom auth events
-        window.addEventListener('authStateChange', handleAuthChange);
-
-        // Listen for storage events (for cross-tab synchronization)
-        const handleStorageChange = (e) => {
-            if (e.key === 'auth_change') {
-                checkAuthStatus();
-            }
-        };
-        window.addEventListener('storage', handleStorageChange);
-
-        return () => {
-            window.removeEventListener('authStateChange', handleAuthChange);
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, []);
-
-    // Handle logout
     const handleLogout = async () => {
         try {
             const response = await fetch('/api/users/logout', {
                 method: 'POST',
-                credentials: 'include',
+                credentials: 'include'
             });
 
             if (response.ok) {
-                setUser(null);
+                // Clear auth state
+                clearAuth();
+                localStorage.removeItem('auth_user');
                 setProfileDropdownOpen(false);
 
-                // Dispatch custom event for auth state change
+                // Clear cart state
+                useCartStore.getState().clearCart();
+                localStorage.removeItem('cart-storage');
+
                 window.dispatchEvent(new CustomEvent('authStateChange', {
                     detail: { type: 'logout' }
                 }));
 
-                // Update localStorage for cross-tab sync
-                localStorage.setItem('auth_change', Date.now().toString());
-
-                toast.success('Logged out successfully!');
-                router.push('/');
-                closeMobileMenu();
-            } else {
-                throw new Error('Logout failed');
+                toast.success('Logged out successfully');
+                router.push('/login');
+                if (isMobileMenuOpen) {
+                    closeMobileMenu();
+                }
             }
         } catch (error) {
+            console.error('Logout failed:', error);
             toast.error('Failed to logout');
         }
     };
+
+
+
+
 
     // Toggle mobile menu
     const toggleMobileMenu = () => {
@@ -233,11 +182,7 @@ const Header = () => {
                                         onMouseLeave={() => setProfileDropdownOpen(false)}
                                         className={`absolute left-1/2 -translate-x-1/2 top-full w-60 bg-white border border-gray-200 shadow-lg rounded-md z-50 transition-all duration-200 ${profileDropdownOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}
                                     >
-                                        {loading ? (
-                                            <div className="p-4">
-                                                <p className="text-sm text-gray-500">Loading...</p>
-                                            </div>
-                                        ) : user ? (
+                                        {user ? (
                                             // User is logged in
                                             <>
                                                 <div className="p-4 border-b">
@@ -392,9 +337,7 @@ const Header = () => {
                         <div className="px-4 py-6">
                             <div className="mb-6">
                                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                                    {loading ? (
-                                        <p className="text-sm text-gray-500">Loading...</p>
-                                    ) : user ? (
+                                    {user ? (
                                         // User is logged in - Mobile
                                         <>
                                             <p className="text-sm font-semibold text-gray-800 mb-1">Welcome Back!</p>

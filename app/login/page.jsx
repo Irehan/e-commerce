@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 import { loginSchema } from '../lib/schemas';
 import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
+import useAuthStore from '../store/useAuthStore';
 
 export default function LoginPage() {
+    const { setAuth } = useAuthStore();
     const router = useRouter();
     const [redirectUrl, setRedirectUrl] = useState('/');
     const {
@@ -53,21 +55,21 @@ export default function LoginPage() {
             } else {
                 toast.success('Login successful!');
 
-                // ✅ Save user data to localStorage
-                localStorage.setItem('auth_user', JSON.stringify(result));
+                // Update auth store
+                setAuth(result.user);
 
-                // ✅ Notify other components (like Header)
+                // Save user data to localStorage
+                localStorage.setItem('auth_user', JSON.stringify(result.user));
+
+                // Notify other components (like Header)
                 window.dispatchEvent(new CustomEvent('authStateChange', {
-                    detail: { type: 'login', user: result }
+                    detail: { type: 'login', user: result.user }
                 }));
 
-                // ✅ Sync across browser tabs
-                localStorage.setItem('auth_change', Date.now().toString());
-
-                // ✅ Clear redirect URL from storage
+                // Clear redirect URL from storage
                 localStorage.removeItem('redirect_after_login');
 
-                // ✅ Navigate to redirect URL or homepage
+                // Navigate to redirect URL or homepage
                 router.push(redirectUrl);
             }
         } catch (error) {
