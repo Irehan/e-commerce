@@ -1,10 +1,11 @@
 // app\products\page.jsx
 'use client';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getProductsByCategory } from '../lib/utils/productHelpers';
 import ProductCard from '../components/ProductCard';
 
-export default function ProductsPage() {
+function ProductList() {
     const searchParams = useSearchParams();
     const category = searchParams.get('category') || 'all';
     const products = getProductsByCategory(category === 'all' ? null : category);
@@ -32,5 +33,28 @@ export default function ProductsPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function ProductsPage() {
+    return (
+        <Suspense fallback={
+            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+                <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded w-1/4 mb-12"></div>
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} className="space-y-4">
+                                <div className="bg-gray-200 rounded-lg h-64"></div>
+                                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        }>
+            <ProductList />
+        </Suspense>
     );
 }
