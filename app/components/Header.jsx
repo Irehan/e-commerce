@@ -292,13 +292,13 @@ const Header = () => {
                                     </div>
                                 </div>
 
-                                <button
+                                <Link href="/wishlist"
                                     className="flex flex-col items-center text-gray-600 hover:text-pink-500 transition-colors duration-200 cursor-pointer"
                                     aria-label="Wishlist"
                                 >
                                     <FiHeart className="h-5 w-5" />
                                     <span className="text-xs mt-1 hidden sm:block">Wishlist</span>
-                                </button>
+                                </Link>
 
                                 <Link href="/cart" className="relative flex flex-col items-center text-gray-600 hover:text-pink-500 transition-colors duration-200 cursor-pointer">
                                     <FiShoppingBag className="h-5 w-5" />
