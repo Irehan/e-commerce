@@ -8,8 +8,10 @@ import { generateToken } from '../../../lib/getDataFromToken';
 
 export async function POST(request) {
     try {
+        console.log('Login attempt starting...');
         await connectDB();
         const { email, password } = await request.json();
+        console.log('Attempting login for email:', email);
 
         const user = await User.findOne({ email });
         if (!user) {
@@ -33,8 +35,11 @@ export async function POST(request) {
         const cookie = serialize('auth_token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
             maxAge: 3600, // 1 hour
             path: '/',
+            // Make sure this matches your Vercel deployment domain
+            domain: process.env.NODE_ENV === 'production' ? '.vercel.app' : 'localhost'
         });
 
         const response = NextResponse.json({
