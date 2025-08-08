@@ -1,5 +1,5 @@
+// D:\web-dev\nextjs-tut\e-commerce\app\components\ProductDetailsPage.jsx
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import toast, { Toaster } from 'react-hot-toast'
@@ -10,6 +10,8 @@ import {
 
 // keep this import as it already exists in your project structure
 import { useWishlistStore } from '../store/useWishlistStore'
+import { useCartStore } from '../store/useCartStore'
+import { useRouter } from 'next/navigation'
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -36,6 +38,10 @@ export default function ProductDetailsPage({ product }) {
 
     const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore()
 
+    // cart store and router for auth-gated add to cart
+    const addToCart = useCartStore(state => state.addToCart)
+    const router = useRouter()
+
     // hydration-safe wishlist guard
     const inWishlist = isInWishlist(product.id)
     useEffect(() => { setHasMounted(true) }, [])
@@ -50,7 +56,6 @@ export default function ProductDetailsPage({ product }) {
     }, [product.images])
 
     const handleAddToCart = () => {
-        // no cart store available in your project yet
         if (getSafeArray(product.sizes).length > 0 && !selectedSize) {
             toast.error('Please select a size')
             return
@@ -59,6 +64,26 @@ export default function ProductDetailsPage({ product }) {
             toast.error('Please select a colour')
             return
         }
+
+        const ok = addToCart(
+            {
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                imageSrc: product.images?.[0] || '/placeholder.jpg'
+            },
+            selectedSize,
+            selectedColor,
+            quantity
+        )
+
+        if (!ok) {
+            toast.error('Please log in to add items to your cart', { id: 'pdp-cart-auth' })
+            localStorage.setItem('redirect_after_login', window.location.pathname + window.location.search)
+            router.push('/login')
+            return
+        }
+
         toast.success(`Added ${quantity} to cart`)
     }
 

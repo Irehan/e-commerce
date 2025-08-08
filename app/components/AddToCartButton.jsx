@@ -1,39 +1,38 @@
 // components/AddToCartButton.jsx
-'use client';
+'use client'
 
-import React from 'react';
-import { useCartStore } from '../store/useCartStore';
-import { FiShoppingCart } from 'react-icons/fi';
+import React from 'react'
+import { useRouter } from 'next/navigation'
+import { FiShoppingCart } from 'react-icons/fi'
+import { useCartStore } from '../store/useCartStore'
+import toast from 'react-hot-toast'
 
-const AddToCartButton = ({ product, size = 'medium' }) => {
-    const addToCart = useCartStore(state => state.addToCart);
+const AddToCartButton = ({ product, size = '', colour = '' }) => {
+    const addToCart = useCartStore((state) => state.addToCart)
+    const router = useRouter()
 
     const handleClick = () => {
-        // Use default values for size and color
-        addToCart(
-            product,
-            '', // default size
-            '', // default color
-            1   // default quantity
-        );
-    };
-
-    // Determine button classes based on size
-    const buttonClasses = {
-        small: 'text-xs px-2 py-1',
-        medium: 'text-sm px-3 py-2',
-        large: 'text-base px-4 py-2'
-    }[size] || 'text-sm px-3 py-2';
+        const ok = addToCart(product, size, colour, 1)
+        if (!ok) {
+            toast.error('Please log in to add items to your cart', { id: 'add-cart-auth' })
+            // Ensure redirect is preserved for after login
+            const currentUrl = window.location.pathname + window.location.search
+            localStorage.setItem('redirect_after_login', currentUrl)
+            router.push('/login')
+            return
+        }
+        toast.success('Added to bag')
+    }
 
     return (
         <button
             onClick={handleClick}
-            className={`${buttonClasses} bg-black text-white rounded flex items-center justify-center gap-1 hover:bg-gray-800 transition-colors`}
+            className="inline-flex items-centre gap-2 rounded-lg bg-indigo-600 text-white px-4 py-2 font-semibold hover:bg-indigo-700 transition-colours"
         >
-            <FiShoppingCart className="text-sm" />
-            <span>Add</span>
+            <FiShoppingCart className="h-4 w-4" />
+            Add to Cart
         </button>
-    );
-};
+    )
+}
 
-export default AddToCartButton;
+export default AddToCartButton

@@ -1,12 +1,13 @@
 // app/wishlist/page.js
-'use client';
-import React from 'react';
-import Link from 'next/link';
-import { useWishlistStore } from '../store/useWishlistStore';
-import useAuthStore from '../store/useAuthStore';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiHeart, FiShoppingCart, FiTrash2, FiArrowRight, FiLogIn } from 'react-icons/fi';
-import { toast, Toaster } from 'react-hot-toast';
+'use client'
+import React from 'react'
+import Link from 'next/link'
+import { useWishlistStore } from '../store/useWishlistStore'
+import { useCartStore } from '../store/useCartStore'
+import useAuthStore from '../store/useAuthStore'
+import { motion, AnimatePresence } from 'framer-motion'
+import { FiHeart, FiShoppingCart, FiTrash2, FiArrowRight, FiLogIn } from 'react-icons/fi'
+import { toast, Toaster } from 'react-hot-toast'
 
 // --- Wishlist Product Card Sub-component ---
 const WishlistCard = ({ product, onRemove, onAddToCart }) => {
@@ -33,20 +34,20 @@ const WishlistCard = ({ product, onRemove, onAddToCart }) => {
                 <p className="text-slate-600 mt-1">${product.price.toFixed(2)}</p>
                 <button
                     onClick={onAddToCart}
-                    className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-50 text-indigo-700 font-semibold rounded-lg hover:bg-indigo-100 transition-colors"
+                    className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-50 text-indigo-700 font-semibold rounded-lg hover:bg-indigo-100 transition-colours"
                 >
                     <FiShoppingCart className="w-4 h-4" />
                     <span>Add to Cart</span>
                 </button>
             </div>
         </div>
-    );
-};
+    )
+}
 
 // --- Main Wishlist Page Component ---
 const WishlistPage = () => {
-    const { wishlistItems, removeFromWishlist, clearWishlist } = useWishlistStore();
-    const { isAuthenticated } = useAuthStore();
+    const { wishlistItems, removeFromWishlist, clearWishlist } = useWishlistStore()
+    const { isAuthenticated } = useAuthStore()
 
     const handleAddToCart = (product) => {
         const cartProduct = {
@@ -55,14 +56,23 @@ const WishlistPage = () => {
             price: product.price,
             imageSrc: product.imageSrc || product.image || product.images?.[0] || '/placeholder.jpg',
             quantity: 1
-        };
-        // Here you would call your cart store's `addToCart` method
-        // e.g., useCartStore.getState().addToCart(cartProduct);
+        }
+
+        const ok = useCartStore.getState().addToCart(cartProduct, '', '', 1)
+
+        if (!ok) {
+            toast.error('Please log in to add items to your cart', { id: 'wishlist-cart-auth' })
+            // Keep the same redirect key read by the login page
+            localStorage.setItem('redirect_after_login', window.location.pathname + window.location.search)
+            window.location.href = '/login'
+            return
+        }
+
         toast.success('Added to cart!', {
             style: {
                 borderRadius: '12px',
                 background: '#f0fdf4',
-                color: '#16a34a',
+                colour: '#16a34a',
                 border: '1px solid #bbf7d0',
                 fontWeight: '600'
             },
@@ -71,19 +81,19 @@ const WishlistPage = () => {
                 secondary: '#f0fdf4'
             },
             duration: 3000
-        });
-    };
+        })
+    }
 
     const containerVariants = {
         hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { staggerChildren: 0.07 } },
-    };
+        visible: { opacity: 1, transition: { staggerChildren: 0.07 } }
+    }
 
     const itemVariants = {
         hidden: { opacity: 0, y: 20, scale: 0.98 },
         visible: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: -20, scale: 0.98, transition: { duration: 0.3 } },
-    };
+        exit: { opacity: 0, y: -20, scale: 0.98, transition: { duration: 0.3 } }
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
@@ -91,77 +101,63 @@ const WishlistPage = () => {
             <div className="max-w-7xl mx-auto">
                 <motion.div initial="hidden" animate="visible" variants={containerVariants}>
                     {/* --- Header --- */}
-                    <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-4 mb-10">
+                    <motion.div variants={itemVariants} className="flex flex-wrap items-centre justify-between gap-4 mb-10">
                         <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Your Wishlist</h1>
                         {isAuthenticated && wishlistItems.length > 0 && (
-                            <div className="flex items-center gap-4">
-                                <p className="text-slate-600 font-medium">{wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'}</p>
+                            <div className="flex items-centre gap-4">
+                                <p className="text-slate-600 font-medium">
+                                    {wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'}
+                                </p>
                                 <button
                                     onClick={clearWishlist}
-                                    className="text-sm font-medium text-red-500 hover:text-red-700 flex items-center gap-1.5 transition-colors"
+                                    className="text-sm font-medium text-red-500 hover:text-red-700 flex items-centre gap-1.5 transition-colours"
                                 >
                                     <FiTrash2 /> Clear All
                                 </button>
                             </div>
                         )}
                     </motion.div>
+
                     {/* --- Wishlist Content --- */}
                     {!isAuthenticated ? (
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-center bg-white rounded-2xl shadow-sm p-12 border border-slate-200/80"
-                        >
+                        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-centre bg-white rounded-2xl shadow-sm p-12 border border-slate-200/80">
                             <FiLogIn className="mx-auto w-16 h-16 text-slate-300 mb-4" />
                             <h2 className="text-2xl font-semibold text-slate-800">Please Login</h2>
                             <p className="mt-2 text-slate-500">You need to be logged in to view your wishlist.</p>
                             <Link
                                 href="/login"
-                                className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-indigo-200"
+                                className="mt-8 inline-flex items-centre gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-indigo-200"
                             >
                                 Go to Login <FiArrowRight />
                             </Link>
                         </motion.div>
                     ) : wishlistItems.length === 0 ? (
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-center bg-white rounded-2xl shadow-sm p-12 border border-slate-200/80"
-                        >
+                        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-centre bg-white rounded-2xl shadow-sm p-12 border border-slate-200/80">
                             <FiHeart className="mx-auto w-16 h-16 text-slate-300 mb-4" />
                             <h2 className="text-2xl font-semibold text-slate-800">Your wishlist is empty</h2>
-                            <p className="mt-2 text-slate-500">Save items you love for easy access later. They'll show up here.</p>
+                            <p className="mt-2 text-slate-500">Save items you love for easy access later. They will show up here.</p>
                             <Link
                                 href="/products"
-                                className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-indigo-200"
+                                className="mt-8 inline-flex items-centre gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-indigo-200"
                             >
                                 Browse Products <FiArrowRight />
                             </Link>
                         </motion.div>
                     ) : (
-                        <motion.div
-                            variants={containerVariants}
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                        >
-
+                        <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             <AnimatePresence>
-                                {wishlistItems.map(product => (
+                                {wishlistItems.map((product) => (
                                     <motion.div key={product.id} layout variants={itemVariants} exit="exit">
-                                        <WishlistCard
-                                            product={product}
-                                            onRemove={() => removeFromWishlist(product.id)}
-                                            onAddToCart={() => handleAddToCart(product)}
-                                        />
+                                        <WishlistCard product={product} onRemove={() => removeFromWishlist(product.id)} onAddToCart={() => handleAddToCart(product)} />
                                     </motion.div>
                                 ))}
                             </AnimatePresence>
-
                         </motion.div>
                     )}
                 </motion.div>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default WishlistPage;
+export default WishlistPage

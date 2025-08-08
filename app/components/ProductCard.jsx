@@ -1,4 +1,4 @@
-// ProductCard.jsx
+// D:\web-dev\nextjs-tut\e-commerce\app\components\ProductCard.jsx
 "use client"
 
 import { useState, useEffect } from "react"
