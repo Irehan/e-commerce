@@ -113,7 +113,7 @@ const Header = () => {
                                     <div className="flex-shrink-0 cursor-pointer">
                                         <div className="w-8 h-8 rounded-md overflow-hidden relative">
                                             <Image
-                                                src="/logo.png"
+                                                src="/logo.webp"
                                                 alt="Logo"
                                                 fill
                                                 className="object-cover"
