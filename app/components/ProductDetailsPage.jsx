@@ -9,6 +9,7 @@ import {
     FiMinus, FiPlus, FiShoppingBag, FiArrowRight
 } from 'react-icons/fi';
 import { useCartStore } from '../store/useCartStore'; // Import cart store
+import { useWishlistStore } from '../store/useWishlistStore'; // Import wishlist store
 import { isAuthenticated } from '../lib/utils/auth'; // Import auth utility
 
 // Animation Variants for Framer Motion
@@ -33,10 +34,15 @@ export default function ProductDetailsPage({ product = mockProduct }) {
     const [selectedImage, setSelectedImage] = useState(0);
     const [isLiked, setIsLiked] = useState(false);
     const [activeTab, setActiveTab] = useState('description');
-    const [isInWishlist, setIsInWishlist] = useState(false);
 
     // Get cart store methods
     const { addToCart } = useCartStore();
+
+    // Get wishlist store methods
+    const { addToWishlist, removeFromWishlist, isInWishlist: checkIsInWishlist } = useWishlistStore();
+
+    // Check if product is in wishlist
+    const isInWishlist = checkIsInWishlist(product.id);
 
     const getSafeArray = (arr) => Array.isArray(arr) ? arr : [];
 
@@ -146,21 +152,19 @@ export default function ProductDetailsPage({ product = mockProduct }) {
     };
 
     const handleWishlistToggle = () => {
-        setIsInWishlist(!isInWishlist);
-        if (!isInWishlist) {
-            toast.success('Added to wishlist', {
-                style: {
-                    borderRadius: '12px',
-                    background: '#fef7f0',
-                    color: '#ea580c',
-                    border: '1px solid #fed7aa'
-                },
-                iconTheme: {
-                    primary: '#ea580c',
-                    secondary: '#fef7f0'
-                }
-            });
-        } else {
+        // Create the product object for the wishlist
+        const wishlistProduct = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            imageSrc: product.images?.[0] || '/placeholder.jpg',
+            department: product.department,
+            category: product.category,
+            subcategory: product.subcategory
+        };
+
+        if (isInWishlist) {
+            removeFromWishlist(product.id);
             toast('Removed from wishlist', {
                 style: {
                     borderRadius: '12px',
@@ -169,6 +173,23 @@ export default function ProductDetailsPage({ product = mockProduct }) {
                     border: '1px solid #e2e8f0'
                 }
             });
+        } else {
+            const success = addToWishlist(wishlistProduct);
+            if (success) {
+                toast.success('Added to wishlist', {
+                    style: {
+                        borderRadius: '12px',
+                        background: '#fef7f0',
+                        color: '#ea580c',
+                        border: '1px solid #fed7aa'
+                    },
+                    iconTheme: {
+                        primary: '#ea580c',
+                        secondary: '#fef7f0'
+                    }
+                });
+            }
+            // If success is false, user was redirected to login
         }
     };
 
@@ -237,9 +258,9 @@ export default function ProductDetailsPage({ product = mockProduct }) {
                             <div className="flex items-center justify-between">
                                 <span className="inline-block px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-full">{product.department}</span>
                                 <div className="flex items-center gap-3">
-                                    <button onClick={() => setIsLiked(!isLiked)} className={`p-2 rounded-full transition-colors duration-300 ${isLiked ? 'text-red-500 bg-red-100' : 'text-slate-500 hover:bg-slate-100'}`}>
+                                    {/* <button onClick={() => setIsLiked(!isLiked)} className={`p-2 rounded-full transition-colors duration-300 ${isLiked ? 'text-red-500 bg-red-100' : 'text-slate-500 hover:bg-slate-100'}`}>
                                         <FiHeart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                                    </button>
+                                    </button> */}
                                     <button className="p-2 rounded-full text-slate-500 hover:bg-slate-100 transition-colors duration-300"><FiShare2 className="w-5 h-5" /></button>
                                 </div>
                             </div>

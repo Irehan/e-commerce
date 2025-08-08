@@ -2,11 +2,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// Simple authentication check
+// Import auth store
+import useAuthStore from './useAuthStore';
+
+// Authentication check using auth store
 const isAuthenticated = () => {
     if (typeof window === 'undefined') return false;
-    const user = localStorage.getItem('auth_user');
-    return user && user !== 'null';
+    return useAuthStore.getState().isAuthenticated;
 };
 
 export const useWishlistStore = create(persist(
