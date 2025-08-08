@@ -40,7 +40,7 @@ async function checkImageExists(src) {
 }
 
 export default function ProductCard({ product }) {
-    const [imageSrc, setImageSrc] = useState("/placeholder.jpg")
+    const [imageSrc, setImageSrc] = useState("/placeholder.webp")
     const [isLoading, setIsLoading] = useState(true)
     const [hasMounted, setHasMounted] = useState(false)
 
@@ -65,7 +65,7 @@ export default function ProductCard({ product }) {
 
             if (!candidate || typeof candidate !== "string" || candidate.trim() === "") {
                 if (!cancelled) {
-                    setImageSrc("/placeholder.jpg")
+                    setImageSrc("/placeholder.webp")
                     setIsLoading(false)
                 }
                 return
@@ -73,7 +73,7 @@ export default function ProductCard({ product }) {
 
             const ok = await checkImageExists(candidate)
             if (!cancelled) {
-                setImageSrc(ok ? candidate : "/placeholder.jpg")
+                setImageSrc(ok ? candidate : "/placeholder.webp")
                 setIsLoading(false)
             }
         }
@@ -84,8 +84,8 @@ export default function ProductCard({ product }) {
     }, [product?.imageSrc, product?.image, product?.images])
 
     const handleImageError = () => {
-        if (imageSrc !== "/placeholder.jpg") {
-            setImageSrc("/placeholder.jpg")
+        if (imageSrc !== "/placeholder.webp") {
+            setImageSrc("/placeholder.webp")
         }
     }
 
@@ -104,7 +104,7 @@ export default function ProductCard({ product }) {
             name: product.name,
             price: product.price,
             imageSrc:
-                product?.imageSrc || product?.image || (Array.isArray(product?.images) ? product.images[0] : "/placeholder.jpg"),
+                product?.imageSrc || product?.image || (Array.isArray(product?.images) ? product.images[0] : "/placeholder.webp"),
             department: product.department,
             category: product.category,
             subcategory: product.subcategory

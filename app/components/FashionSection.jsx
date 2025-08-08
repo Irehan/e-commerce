@@ -18,7 +18,7 @@ const FashionSection = () => {
             id: 1,
             title: "Wed Ready",
             subtitle: "Styled for the spotlight!",
-            image: "/wed-ready.jpg",
+            image: "/wed-ready.webp",
             alt: "Traditional wedding attire collection",
             gradient: "from-gray-900 to-gray-700"
         },
@@ -26,7 +26,7 @@ const FashionSection = () => {
             id: 2,
             title: "Glam Game",
             subtitle: "Where sparkle meets soul",
-            image: "/glam-game.jpg",
+            image: "/glam-game.webp",
             alt: "Gold jewelry and accessories collection",
             gradient: "from-amber-600 to-yellow-500"
         },
@@ -34,7 +34,7 @@ const FashionSection = () => {
             id: 3,
             title: "Slay Summer",
             subtitle: "Breezy looks, sunny vibes!",
-            image: "/slay-summer.jpg",
+            image: "/slay-summer.webp",
             alt: "Summer fashion collection",
             gradient: "from-green-500 to-teal-400"
         },
@@ -42,7 +42,7 @@ const FashionSection = () => {
             id: 4,
             title: "Summer Mode",
             subtitle: "Styling under the Sun!",
-            image: "/summer-mode.jpg",
+            image: "/summer-mode.webp",
             alt: "Casual summer wear collection",
             gradient: "from-purple-500 to-indigo-400"
         }
@@ -58,7 +58,7 @@ const FashionSection = () => {
                 collections.map(async (collection) => {
                     // If no image provided or invalid, use placeholder
                     if (!collection.image || typeof collection.image !== 'string' || collection.image.trim() === '') {
-                        return { id: collection.id, src: '/placeholder.jpg' };
+                        return { id: collection.id, src: '/placeholder.webp' };
                     }
 
                     // Check if the original image exists
@@ -66,7 +66,7 @@ const FashionSection = () => {
 
                     return {
                         id: collection.id,
-                        src: imageExists ? collection.image : '/placeholder.jpg'
+                        src: imageExists ? collection.image : '/placeholder.webp'
                     };
                 })
             );
@@ -86,10 +86,10 @@ const FashionSection = () => {
 
     const handleImageError = (collectionId) => {
         // Final fallback if image fails to load even after our check
-        if (imageSources[collectionId] !== '/placeholder.jpg') {
+        if (imageSources[collectionId] !== '/placeholder.webp') {
             setImageSources(prev => ({
                 ...prev,
-                [collectionId]: '/placeholder.jpg'
+                [collectionId]: '/placeholder.webp'
             }));
         }
     };
@@ -112,7 +112,7 @@ const FashionSection = () => {
                                     <>
                                         {/* Background Image */}
                                         <Image
-                                            src={imageSources[collection.id] || '/placeholder.jpg'}
+                                            src={imageSources[collection.id] || '/placeholder.webp'}
                                             alt={collection.alt}
                                             fill
                                             className="object-cover transition-transform duration-700 group-hover:scale-110"

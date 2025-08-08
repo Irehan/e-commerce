@@ -70,7 +70,7 @@ export default function ProductDetailsPage({ product }) {
                 id: product.id,
                 name: product.name,
                 price: product.price,
-                imageSrc: product.images?.[0] || '/placeholder.jpg'
+                imageSrc: product.images?.[0] || '/placeholder.webp'
             },
             selectedSize,
             selectedColor,
@@ -92,7 +92,7 @@ export default function ProductDetailsPage({ product }) {
             id: product.id,
             name: product.name,
             price: product.price,
-            imageSrc: product.images?.[0] || '/placeholder.jpg',
+            imageSrc: product.images?.[0] || '/placeholder.webp',
             department: product.department,
             category: product.category,
             subcategory: product.subcategory
@@ -134,7 +134,7 @@ export default function ProductDetailsPage({ product }) {
                             <AnimatePresence mode="wait">
                                 <motion.img
                                     key={selectedImage}
-                                    src={product.images?.[selectedImage] || '/placeholder.jpg'}
+                                    src={product.images?.[selectedImage] || '/placeholder.webp'}
                                     alt={product.name}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}

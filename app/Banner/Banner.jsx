@@ -8,7 +8,7 @@ import styles from '../Banner/Banner.module.css';
 import { Navigation } from 'swiper/modules';
 
 export default function Banner() {
-    const banners = ['/banner-1.jpeg', '/banner-2.jpg', '/banner-3.jpg'];
+    const banners = ['/banner-1.webp', '/banner-2.webp', '/banner-3.webp'];
 
     return (
         <div className={styles.bannerSec}>
