@@ -1,3 +1,4 @@
+// D:\web-dev\nextjs-tut\e-commerce\app\Banner\Banner.jsx
 'use client';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import Image from 'next/image';

@@ -1,3 +1,4 @@
+// D:\web-dev\nextjs-tut\e-commerce\app\components\WishlistButton.jsx
 'use client';
 import { FiHeart, FiCheck } from 'react-icons/fi';
 import { useWishlistStore } from '../store/useWishlistStore';

@@ -1,0 +1,3023 @@
+// D:\web-dev\nextjs-tut\e-commerce\app\Banner\Banner.jsx
+'use client';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import Image from 'next/image';
+import 'swiper/css';
+import 'swiper/css/navigation';
+import styles from '../Banner/Banner.module.css';
+import { Navigation } from 'swiper/modules';
+
+export default function Banner() {
+    const banners = ['/banner-1.jpeg', '/banner-2.jpg', '/banner-3.jpg'];
+
+    return (
+        <div className={styles.bannerSec}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <Swiper
+                    navigation
+                    modules={[Navigation]}
+                    spaceBetween={20}
+                    slidesPerView={1}
+                    loop
+                    className="mySwiper"
+                >
+                    {banners.map((src, index) => (
+                        <SwiperSlide key={index}>
+                            <div className={styles.imageWrapper}>
+                                <Image
+                                    src={src}
+                                    alt={`banner-${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    priority={index === 0}
+                                />
+                            </div>
+                        </SwiperSlide>
+                    ))}
+                </Swiper>
+            </div>
+        </div>
+    );
+}
+// app/cart/page.jsx
+'use client';
+import { useCartStore } from '../store/useCartStore';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FiTrash2, FiMinus, FiPlus, FiArrowLeft, FiShoppingCart } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+
+export default function CartPage() {
+    const router = useRouter();
+    // Ensure you have a 'clearCart' method in your Zustand store
+    const { cart, removeFromCart, updateQuantity, clearCart } = useCartStore();
+    const [isClient, setIsClient] = useState(false);
+
+    // Calculate totals derived from the cart state
+    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const shipping = cart.length > 0 ? 5.99 : 0; // Only add shipping if cart has items
+    const taxRate = 0.08;
+    const taxes = subtotal * taxRate;
+    const total = subtotal + shipping + taxes;
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const handleCheckout = () => {
+        // In a real app, you would process payment here.
+        // On success, you would then clear the cart and redirect.
+        alert('Proceeding to checkout!');
+        // clearCart(); // You might call this after payment confirmation
+        router.push('/checkout/success');
+    };
+
+    // Animation variants for Framer Motion
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+        },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+        exit: { opacity: 0, x: -50, transition: { duration: 0.3 } },
+    };
+
+    if (!isClient) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <p className="text-slate-500">Loading Cart...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+                <motion.div initial="hidden" animate="visible" variants={containerVariants}>
+                    <motion.div variants={itemVariants} className="flex items-center justify-between mb-8">
+                        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Your Cart</h1>
+                        <button
+                            onClick={() => router.push('/products')}
+                            className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                        >
+                            <FiArrowLeft className="w-4 h-4" />
+                            Continue Shopping
+                        </button>
+                    </motion.div>
+
+                    {cart.length === 0 ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center bg-white rounded-2xl shadow-sm p-12"
+                        >
+                            <FiShoppingCart className="mx-auto w-16 h-16 text-slate-300 mb-4" />
+                            <h2 className="text-2xl font-semibold text-slate-800">Your cart is empty</h2>
+                            <p className="mt-2 text-slate-500">Looks like you haven't added anything to your cart yet.</p>
+                            <button
+                                onClick={() => router.push('/products')}
+                                className="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-indigo-200"
+                            >
+                                Start Shopping
+                            </button>
+                        </motion.div>
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
+                            {/* Cart Items */}
+                            <motion.div variants={itemVariants} className="lg:col-span-2 bg-white rounded-2xl shadow-sm overflow-hidden">
+                                <ul role="list" className="divide-y divide-slate-200">
+                                    <AnimatePresence>
+                                        {cart.map((item) => (
+                                            <motion.li
+                                                key={`${item.id}-${item.size}-${item.color}`}
+                                                layout
+                                                variants={itemVariants}
+                                                exit="exit"
+                                                className="p-4 sm:p-6"
+                                            >
+                                                <div className="flex items-center gap-4 sm:gap-6">
+                                                    <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100">
+                                                        <Image
+                                                            src={item.image || '/placeholder.jpg'}
+                                                            alt={item.name}
+                                                            fill
+                                                            className="object-cover"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                        {/* Product Info */}
+                                                        <div className="md:col-span-1">
+                                                            <h3 className="font-semibold text-slate-800">{item.name}</h3>
+                                                            <div className="mt-1 text-sm text-slate-500">
+                                                                {item.color && <p>Color: {item.color}</p>}
+                                                                {item.size && <p>Size: {item.size}</p>}
+                                                            </div>
+                                                            <p className="mt-2 font-medium text-indigo-600 md:hidden">${item.price.toFixed(2)}</p>
+                                                        </div>
+                                                        {/* Quantity Control */}
+                                                        <div className="flex items-center justify-start md:justify-center">
+                                                            <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                                                                <button onClick={() => updateQuantity(item.id, item.size, item.color, item.quantity - 1)} disabled={item.quantity <= 1} className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors flex items-center justify-center disabled:opacity-50"><FiMinus /></button>
+                                                                <span className="w-10 text-center text-base font-semibold text-slate-900">{item.quantity}</span>
+                                                                <button onClick={() => updateQuantity(item.id, item.size, item.color, item.quantity + 1)} className="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors flex items-center justify-center"><FiPlus /></button>
+                                                            </div>
+                                                        </div>
+                                                        {/* Price and Remove */}
+                                                        <div className="flex items-center justify-between md:flex-col md:items-end md:justify-center">
+                                                            <p className="font-bold text-slate-900 text-lg">${(item.price * item.quantity).toFixed(2)}</p>
+                                                            <button onClick={() => removeFromCart(item.id, item.size, item.color)} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                                                                <FiTrash2 className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.li>
+                                        ))}
+                                    </AnimatePresence>
+                                </ul>
+                                {cart.length > 0 && (
+                                    <div className="p-4 sm:p-6 border-t border-slate-200 flex justify-end">
+                                        <button onClick={clearCart} className="text-sm font-medium text-red-500 hover:text-red-700 flex items-center gap-1.5 transition-colors">
+                                            <FiTrash2 /> Clear Cart
+                                        </button>
+                                    </div>
+                                )}
+                            </motion.div>
+
+                            {/* Order Summary */}
+                            <motion.div variants={itemVariants} className="lg:col-span-1">
+                                <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-8">
+                                    <h2 className="text-xl font-semibold text-slate-900 mb-6">Order Summary</h2>
+                                    <div className="space-y-4 text-slate-600">
+                                        <div className="flex justify-between"><span>Subtotal</span><span className="font-medium text-slate-800">${subtotal.toFixed(2)}</span></div>
+                                        <div className="flex justify-between"><span>Shipping</span><span className="font-medium text-slate-800">${shipping.toFixed(2)}</span></div>
+                                        <div className="flex justify-between"><span>Taxes</span><span className="font-medium text-slate-800">${taxes.toFixed(2)}</span></div>
+                                        <div className="border-t border-slate-200 pt-4 mt-4 flex justify-between text-lg font-bold text-slate-900">
+                                            <span>Total</span>
+                                            <span>${total.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleCheckout}
+                                        className="w-full mt-8 py-3.5 px-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                    >
+                                        Proceed to Checkout
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </div>
+                    )}
+                </motion.div>
+            </div>
+        </div>
+    );
+}
+// app/checkout/success/page.jsx
+import { FiCheckCircle } from 'react-icons/fi';
+import Link from 'next/link';
+
+export default function CheckoutSuccess() {
+    return (
+        <div className="min-h-screen bg-white flex items-center justify-center px-4">
+            <div className="text-center max-w-md py-12">
+                <FiCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+                <h2 className="mt-4 text-3xl font-bold text-gray-900">Order Confirmed!</h2>
+                <p className="mt-2 text-gray-600">
+                    Thank you for your purchase. Your order has been confirmed and will be shipped soon.
+                </p>
+                <div className="mt-8 flex justify-center gap-4">
+                    <Link
+                        href="/orders"
+                        className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                    >
+                        View Orders
+                    </Link>
+                    <Link
+                        href="/products"
+                        className="px-6 py-3 bg-white text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50"
+                    >
+                        Continue Shopping
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+}
+// components/AddToCartButton.jsx
+'use client';
+
+import React from 'react';
+import { useCartStore } from '../store/useCartStore';
+import { FiShoppingCart } from 'react-icons/fi';
+
+const AddToCartButton = ({ product, size = 'medium' }) => {
+    const addToCart = useCartStore(state => state.addToCart);
+
+    const handleClick = () => {
+        // Use default values for size and color
+        addToCart(
+            product,
+            '', // default size
+            '', // default color
+            1   // default quantity
+        );
+    };
+
+    // Determine button classes based on size
+    const buttonClasses = {
+        small: 'text-xs px-2 py-1',
+        medium: 'text-sm px-3 py-2',
+        large: 'text-base px-4 py-2'
+    }[size] || 'text-sm px-3 py-2';
+
+    return (
+        <button
+            onClick={handleClick}
+            className={`${buttonClasses} bg-black text-white rounded flex items-center justify-center gap-1 hover:bg-gray-800 transition-colors`}
+        >
+            <FiShoppingCart className="text-sm" />
+            <span>Add</span>
+        </button>
+    );
+};
+
+export default AddToCartButton;
+// components/AddToWishlist.js
+'use client';
+
+import React from 'react';
+import { useWishlistStore } from '../store/useWishlistStore';
+
+const AddToWishlist = ({ product }) => {
+    const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
+    const [isInList, setIsInList] = React.useState(false);
+
+    React.useEffect(() => {
+        setIsInList(isInWishlist(product.id));
+    }, [product.id, isInWishlist]);
+
+    const isAuthenticated = typeof window !== 'undefined' && localStorage.getItem('user_token'); // Replace 'user_token' with your actual key
+
+    const handleWishlistClick = () => {
+        if (!isAuthenticated) {
+            const currentUrl = window.location.pathname + window.location.search;
+            localStorage.setItem('redirect_after_login', currentUrl);
+            window.location.href = '/login';
+            return;
+        }
+
+        if (isInList) {
+            removeFromWishlist(product.id);
+        } else {
+            addToWishlist({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                department: product.department,
+                category: product.category,
+                subcategory: product.subcategory
+            });
+        }
+    };
+
+    return (
+        <button
+            onClick={handleWishlistClick}
+            className="p-2 text-gray-500 hover:text-red-500 transition-colors"
+            aria-label={isInList ? "Remove from wishlist" : "Add to wishlist"}
+        >
+            {isInList ? '❤️' : '🤍'}
+        </button>
+    );
+};
+
+export default AddToWishlist;
+// D:\web-dev\nextjs-tut\e-commerce\app\components\AuthGuard.jsx
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import useAuthStore from '../store/useAuthStore';
+
+export default function AuthGuard({ children }) {
+    const { isAuthenticated } = useAuthStore();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isAuthenticated, router]);
+
+    if (!isAuthenticated) {
+        return null; // or a loading spinner
+    }
+
+    return children;
+}
+// D:\web-dev\nextjs-tut\e-commerce\app\components\AuthProvider.jsx
+'use client';
+import { useEffect } from 'react';
+import useAuthStore from '../store/useAuthStore';
+
+export default function AuthProvider({ children }) {
+    const { setAuth, clearAuth } = useAuthStore();
+
+    useEffect(() => {
+        const checkAuthStatus = async () => {
+            try {
+                const response = await fetch('/api/users/me', {
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    setAuth(userData);
+                } else {
+                    clearAuth();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                clearAuth();
+            }
+        };
+
+        checkAuthStatus();
+    }, [setAuth, clearAuth]);
+
+    return children;
+}
+// app/components/BestSelling.jsx
+"use client";
+import { useState } from 'react';
+
+import ProductCard from './ProductCard';
+import { products } from '../lib/data/products';
+
+const getBestSellingProducts = (limit = 12) => {
+    return products.filter(product => product.isBestSeller).slice(0, limit);
+};
+
+export default function BestSelling() {
+    const bestSellingProducts = getBestSellingProducts(12);
+
+    return (
+        <main className="bg-white">
+            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+                <div className="flex justify-between items-baseline mb-12 border-b pb-4">
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                        Best Selling Products
+                    </h1>
+                    <a
+                        href="/products?category=all"
+                        className="text-sm font-semibold text-gray-700 hover:text-black hover:underline underline-offset-4 transition-colors"
+                    >
+                        Shop All Products
+                    </a>
+                </div>
+
+                <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-6 xl:gap-x-8">
+                    {bestSellingProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                </div>
+            </div>
+        </main>
+    );
+}
+// D:\web-dev\nextjs-tut\e-commerce\app\components\CategorySection.jsx
+'use client';
+import React, { useState, useEffect } from 'react';
+import { FiUser, FiUsers, FiHeart, FiStar, FiArrowRight, FiTrendingUp } from 'react-icons/fi';
+import Link from 'next/link';
+
+const CategorySection = () => {
+    const [hoveredIndex, setHoveredIndex] = useState(null);
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+    const categories = [
+        {
+            name: "Men",
+            icon: FiUser,
+            gradient: "from-blue-500 to-cyan-500",
+            hoverGradient: "from-blue-400 to-cyan-400",
+            bgPattern: "from-blue-500/10 to-cyan-500/10",
+            image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+            stats: "2.5K+ Items",
+            trend: "+12%"
+        },
+        {
+            name: "Women",
+            icon: FiUsers,
+            gradient: "from-pink-500 to-rose-500",
+            hoverGradient: "from-pink-400 to-rose-400",
+            bgPattern: "from-pink-500/10 to-rose-500/10",
+            image: "https://images.unsplash.com/photo-1583167461820-d79d51f89d7a?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+            stats: "3.2K+ Items",
+            trend: "+18%"
+        },
+        {
+            name: "Kids",
+            icon: FiHeart,
+            gradient: "from-purple-500 to-indigo-500",
+            hoverGradient: "from-purple-400 to-indigo-400",
+            bgPattern: "from-purple-500/10 to-indigo-500/10",
+            image: "https://images.unsplash.com/flagged/photo-1555895312-bbc472c964f3?q=80&w=388&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+            stats: "1.8K+ Items",
+            trend: "+25%"
+        },
+        {
+            name: "Beauty",
+            icon: FiStar,
+            gradient: "from-emerald-500 to-teal-500",
+            hoverGradient: "from-emerald-400 to-teal-400",
+            bgPattern: "from-emerald-500/10 to-teal-500/10",
+            image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=580&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+            stats: "950+ Items",
+            trend: "+32%"
+        }
+    ];
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            setMousePosition({ x: e.clientX, y: e.clientY });
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
+    const slugify = (text) =>
+        text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
+    return (
+        <section className="relative py-24 px-6 bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 overflow-hidden">
+            {/* Background Elements */}
+            <div className="absolute inset-0 opacity-30">
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_25%_25%,rgba(59,130,246,0.1),transparent_50%)]"></div>
+                <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_75%_75%,rgba(168,85,247,0.1),transparent_50%)]"></div>
+            </div>
+
+            {/* Floating Elements */}
+            <div className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-xl animate-pulse"></div>
+            <div className="absolute bottom-20 right-10 w-32 h-32 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-xl animate-pulse delay-1000"></div>
+
+            {/* Grid Pattern */}
+            <div className="absolute inset-0 opacity-5" style={{
+                backgroundImage: 'linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)',
+                backgroundSize: '40px 40px'
+            }}></div>
+
+            <div className="relative z-10 max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="text-center mb-16">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full border border-blue-500/20 mb-6">
+                        <FiTrendingUp className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-gray-700">Trending Categories</span>
+                    </div>
+
+                    <h2 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-gray-800 via-gray-600 to-gray-800 bg-clip-text text-transparent leading-tight">
+                        Shop by Category
+                    </h2>
+
+                    <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                        Discover curated collections tailored to your lifestyle and preferences
+                    </p>
+
+                    {/* Decorative Line */}
+                    <div className="mt-8 flex justify-center">
+                        <div className="w-24 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent rounded-full"></div>
+                    </div>
+                </div>
+
+                {/* Categories Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+                    {categories.map((category, index) => {
+                        const Icon = category.icon;
+                        const isHovered = hoveredIndex === index;
+                        return (
+                            <Link href={`/products?category=${encodeURIComponent(category.name.toLowerCase())}`}
+                                key={index}
+                                onMouseEnter={() => setHoveredIndex(index)}
+                                onMouseLeave={() => setHoveredIndex(null)}
+                                className="group relative cursor-pointer"
+                            >
+                                {/* Main Card */}
+                                <div className={`
+                  relative p-8 rounded-3xl bg-white shadow-lg hover:shadow-2xl 
+                  transform transition-all duration-500 ease-out
+                  ${isHovered ? 'scale-105 -translate-y-2' : ''}
+                  border border-gray-100 hover:border-transparent
+                  overflow-hidden
+                `}>
+                                    {/* Animated Background */}
+                                    <div className={`
+                    absolute inset-0 bg-gradient-to-br ${category.bgPattern} 
+                    opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                  `}></div>
+
+                                    {/* Shimmer Effect */}
+                                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="relative z-10">
+                                        {/* Icon Container */}
+                                        <div className="relative mb-6">
+                                            <div className={`
+                        w-16 h-16 rounded-2xl bg-gradient-to-r ${category.gradient}
+                        flex items-center justify-center shadow-lg
+                        transform transition-all duration-300
+                        ${isHovered ? `shadow-2xl ${category.gradient.includes('blue') ? 'shadow-blue-500/25' :
+                                                    category.gradient.includes('pink') ? 'shadow-pink-500/25' :
+                                                        category.gradient.includes('purple') ? 'shadow-purple-500/25' :
+                                                            'shadow-emerald-500/25'}` : ''}
+                      `}>
+                                                <Icon className="w-8 h-8 text-white" />
+                                            </div>
+
+                                            {/* Pulsing Ring */}
+                                            <div className={`
+                        absolute inset-0 w-16 h-16 rounded-2xl bg-gradient-to-r ${category.gradient}
+                        opacity-0 group-hover:opacity-20 animate-ping
+                      `}></div>
+                                        </div>
+
+                                        {/* Image */}
+                                        <div className="relative mb-6 flex justify-center">
+                                            <div className="relative">
+                                                <img
+                                                    src={category.image}
+                                                    alt={category.name}
+                                                    className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg group-hover:shadow-xl transition-shadow duration-300"
+                                                />
+                                                <div className="absolute inset-0 rounded-full bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* Category Name */}
+                                        <h3 className="text-2xl font-bold text-gray-800 mb-2 group-hover:text-gray-900 transition-colors">
+                                            {category.name}
+                                        </h3>
+
+                                        {/* Stats */}
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-sm text-gray-500 font-medium">{category.stats}</span>
+                                            <div className="flex items-center gap-1">
+                                                <FiTrendingUp className="w-3 h-3 text-green-500" />
+                                                <span className="text-xs text-green-600 font-semibold">{category.trend}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* CTA Button */}
+                                        <div className={`
+                      flex items-center justify-center gap-2 py-3 px-4 rounded-xl
+                      bg-gradient-to-r ${category.gradient} text-white font-semibold
+                      transform transition-all duration-300 opacity-0 translate-y-2
+                      group-hover:opacity-100 group-hover:translate-y-0
+                      hover:shadow-lg cursor-pointer
+                    `}>
+                                            <span className="text-sm">Explore</span>
+                                            <FiArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                                        </div>
+                                    </div>
+
+                                    {/* Corner Accents */}
+                                    <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-gray-200 group-hover:border-white/50 transition-colors duration-300"></div>
+                                    <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-gray-200 group-hover:border-white/50 transition-colors duration-300"></div>
+                                </div>
+
+                                {/* Glow Effect */}
+                                <div className={`
+                  absolute inset-0 rounded-3xl bg-gradient-to-r ${category.gradient}
+                  opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500
+                  -z-10 scale-110
+                `}></div>
+                            </Link>
+                        );
+                    })}
+                </div>
+
+                {/* Bottom CTA */}
+                <div className="text-center mt-16">
+                    <div className="inline-flex items-center gap-3 px-8 py-4 bg-white rounded-2xl shadow-lg hover:shadow-xl border border-gray-100 hover:border-gray-200 transition-all duration-300 cursor-pointer group">
+                        <span className="text-gray-700 font-semibold">View All Categories</span>
+                        <FiArrowRight className="w-5 h-5 text-gray-600 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Mouse Follower */}
+            {hoveredIndex !== null && (
+                <div
+                    className="fixed pointer-events-none z-50 w-4 h-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-sm opacity-50 transition-opacity duration-300"
+                    style={{
+                        left: mousePosition.x - 8,
+                        top: mousePosition.y - 8,
+                        transform: 'translate3d(0,0,0)'
+                    }}
+                />
+            )}
+        </section>
+    );
+};
+
+export default CategorySection;
+"use client";
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
+
+// Function to check if image exists without triggering 404 in console
+const checkImageExists = async (src) => {
+    try {
+        const response = await fetch(src, { method: 'HEAD' });
+        return response.ok;
+    } catch {
+        return false;
+    }
+};
+
+const FashionSection = () => {
+    const collections = [
+        {
+            id: 1,
+            title: "Wed Ready",
+            subtitle: "Styled for the spotlight!",
+            image: "/wed-ready.jpg",
+            alt: "Traditional wedding attire collection",
+            gradient: "from-gray-900 to-gray-700"
+        },
+        {
+            id: 2,
+            title: "Glam Game",
+            subtitle: "Where sparkle meets soul",
+            image: "/glam-game.jpg",
+            alt: "Gold jewelry and accessories collection",
+            gradient: "from-amber-600 to-yellow-500"
+        },
+        {
+            id: 3,
+            title: "Slay Summer",
+            subtitle: "Breezy looks, sunny vibes!",
+            image: "/slay-summer.jpg",
+            alt: "Summer fashion collection",
+            gradient: "from-green-500 to-teal-400"
+        },
+        {
+            id: 4,
+            title: "Summer Mode",
+            subtitle: "Styling under the Sun!",
+            image: "/summer-mode.jpg",
+            alt: "Casual summer wear collection",
+            gradient: "from-purple-500 to-indigo-400"
+        }
+    ];
+
+    // State for managing image sources
+    const [imageSources, setImageSources] = useState({});
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const loadImages = async () => {
+            const imageChecks = await Promise.all(
+                collections.map(async (collection) => {
+                    // If no image provided or invalid, use placeholder
+                    if (!collection.image || typeof collection.image !== 'string' || collection.image.trim() === '') {
+                        return { id: collection.id, src: '/placeholder.jpg' };
+                    }
+
+                    // Check if the original image exists
+                    const imageExists = await checkImageExists(collection.image);
+
+                    return {
+                        id: collection.id,
+                        src: imageExists ? collection.image : '/placeholder.jpg'
+                    };
+                })
+            );
+
+            // Convert array to object for easy lookup
+            const imageSourceMap = imageChecks.reduce((acc, { id, src }) => {
+                acc[id] = src;
+                return acc;
+            }, {});
+
+            setImageSources(imageSourceMap);
+            setIsLoading(false);
+        };
+
+        loadImages();
+    }, []);
+
+    const handleImageError = (collectionId) => {
+        // Final fallback if image fails to load even after our check
+        if (imageSources[collectionId] !== '/placeholder.jpg') {
+            setImageSources(prev => ({
+                ...prev,
+                [collectionId]: '/placeholder.jpg'
+            }));
+        }
+    };
+
+    return (
+        <section className="py-16 px-4 bg-gray-50">
+            <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {collections.map((collection) => (
+                        <div
+                            key={collection.id}
+                            className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
+                        >
+                            <div className="aspect-[3/4] relative">
+                                {isLoading ? (
+                                    <div className="w-full h-full bg-gray-200 animate-pulse flex items-center justify-center">
+                                        <div className="text-gray-400 text-sm">Loading...</div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Background Image */}
+                                        <Image
+                                            src={imageSources[collection.id] || '/placeholder.jpg'}
+                                            alt={collection.alt}
+                                            fill
+                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                            onError={() => handleImageError(collection.id)}
+                                        />
+                                    </>
+                                )}
+
+                                {/* Gradient Overlay */}
+                                {/* <div
+                                    className={`absolute inset-0 bg-gradient-to-t ${collection.gradient} opacity-70 group-hover:opacity-80 transition-opacity duration-300`}
+                                /> */}
+
+                                {/* Content Overlay */}
+
+
+
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+export default FashionSection;
+import { TbArrowsExchange } from 'react-icons/tb';
+import { IoCheckmarkCircle } from 'react-icons/io5';
+import { BiSupport } from 'react-icons/bi';
+
+const FeaturesSection = () => {
+    const features = [
+        {
+            icon: <TbArrowsExchange className="w-12 h-12 text-gray-600" />,
+            title: "Easy Exchange",
+            description: "We offer hassle free exchange policy"
+        },
+        {
+            icon: <IoCheckmarkCircle className="w-12 h-12 text-gray-600" />,
+            title: "7 Days Return Policy",
+            description: "We provide 7 days free return policy"
+        },
+        {
+            icon: <BiSupport className="w-12 h-12 text-gray-600" />,
+            title: "Best Customer Support",
+            description: "We provide 24/7 customer support"
+        }
+    ];
+
+    return (
+        <section className="py-16 bg-white">
+            <div className="max-w-6xl mx-auto px-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {features.map((feature, index) => (
+                        <div key={index} className="text-center">
+                            <div className="flex justify-center mb-4">
+                                {feature.icon}
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                {feature.title}
+                            </h3>
+                            <p className="text-gray-600 text-sm leading-relaxed">
+                                {feature.description}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+export default FeaturesSection;
+
+'use client';
+import React, { useState, useEffect } from 'react';
+import {
+    FaTwitter,
+    FaLinkedin,
+    FaGithub,
+    FaInstagram,
+    FaYoutube,
+    FaEnvelope,
+    FaPhone,
+    FaMapMarkerAlt,
+    FaArrowUp,
+    FaHeart
+} from 'react-icons/fa';
+
+const Footer = () => {
+    const [isVisible, setIsVisible] = useState(false);
+    const [currentYear] = useState(new Date().getFullYear());
+
+    // Show scroll to top button when scrolled down
+    useEffect(() => {
+        const toggleVisibility = () => {
+            if (window.pageYOffset > 300) {
+                setIsVisible(true);
+            } else {
+                setIsVisible(false);
+            }
+        };
+
+        window.addEventListener('scroll', toggleVisibility);
+        return () => window.removeEventListener('scroll', toggleVisibility);
+    }, []);
+
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
+
+    const socialLinks = [
+        { icon: FaTwitter, href: '#', label: 'Twitter', color: 'hover:text-blue-400' },
+        { icon: FaLinkedin, href: '#', label: 'LinkedIn', color: 'hover:text-blue-600' },
+        { icon: FaGithub, href: '#', label: 'GitHub', color: 'hover:text-gray-300' },
+        { icon: FaInstagram, href: '#', label: 'Instagram', color: 'hover:text-pink-400' },
+        { icon: FaYoutube, href: '#', label: 'YouTube', color: 'hover:text-red-500' }
+    ];
+
+    const quickLinks = [
+        { name: 'About Us', href: '#' },
+        { name: 'Services', href: '#' },
+        { name: 'Products', href: '#' },
+        { name: 'Blog', href: '#' },
+        { name: 'Careers', href: '#' }
+    ];
+
+    const supportLinks = [
+        { name: 'Help Center', href: '#' },
+        { name: 'Contact Us', href: '#' },
+        { name: 'Privacy Policy', href: '#' },
+        { name: 'Terms of Service', href: '#' },
+        { name: 'FAQ', href: '#' }
+    ];
+
+    return (
+        <footer className="relative bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 text-white overflow-hidden">
+            {/* Background Effects */}
+            <div className="absolute inset-0 opacity-20 -z-10">
+                <div className="absolute top-0 left-1/4 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+                <div className="absolute bottom-0 right-1/4 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-72 sm:h-72 lg:w-96 lg:h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+            </div>
+            <div className="absolute inset-0 bg-white bg-opacity-5 backdrop-filter backdrop-blur-sm -z-10"></div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+                {/* Main footer content */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-8 lg:mb-12">
+                    {/* Company Info */}
+                    <div className="sm:col-span-2 lg:col-span-1">
+                        <div className="mb-4 lg:mb-6">
+                            <h3 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                                YourBrand
+                            </h3>
+                            <div className="h-1 w-12 sm:w-16 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full mt-2"></div>
+                        </div>
+                        <p className="text-gray-300 mb-4 lg:mb-6 leading-relaxed text-sm sm:text-base">
+                            Innovating the future with cutting-edge technology and exceptional user experiences.
+                            Building tomorrow's solutions today.
+                        </p>
+
+                        {/* Contact Info */}
+                        <div className="space-y-2 sm:space-y-3">
+                            <div className="flex items-center space-x-3 text-gray-300 hover:text-cyan-400 transition-colors duration-300 text-sm sm:text-base">
+                                <FaEnvelope className="text-cyan-400 flex-shrink-0" />
+                                <span className="break-all">contact@yourbrand.com</span>
+                            </div>
+                            <div className="flex items-center space-x-3 text-gray-300 hover:text-cyan-400 transition-colors duration-300 text-sm sm:text-base">
+                                <FaPhone className="text-cyan-400 flex-shrink-0" />
+                                <span>+1 (555) 123-4567</span>
+                            </div>
+                            <div className="flex items-center space-x-3 text-gray-300 hover:text-cyan-400 transition-colors duration-300 text-sm sm:text-base">
+                                <FaMapMarkerAlt className="text-cyan-400 flex-shrink-0" />
+                                <span>San Francisco, CA</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Links */}
+                    <div className="sm:col-span-1">
+                        <h4 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-white">Quick Links</h4>
+                        <ul className="space-y-2 sm:space-y-3">
+                            {quickLinks.map((link, index) => (
+                                <li key={index}>
+                                    <a
+                                        href={link.href}
+                                        className="text-gray-300 hover:text-cyan-400 transition-all duration-300 hover:translate-x-2 inline-block text-sm sm:text-base"
+                                    >
+                                        {link.name}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Support */}
+                    <div className="sm:col-span-1">
+                        <h4 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-white">Support</h4>
+                        <ul className="space-y-2 sm:space-y-3">
+                            {supportLinks.map((link, index) => (
+                                <li key={index}>
+                                    <a
+                                        href={link.href}
+                                        className="text-gray-300 hover:text-cyan-400 transition-all duration-300 hover:translate-x-2 inline-block text-sm sm:text-base"
+                                    >
+                                        {link.name}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Newsletter */}
+                    <div className="sm:col-span-2 lg:col-span-1">
+                        <h4 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-white">Stay Connected</h4>
+                        <p className="text-gray-300 mb-4 text-sm sm:text-base">
+                            Subscribe to our newsletter for the latest updates and insights.
+                        </p>
+                        <div className="space-y-4">
+                            {/* Newsletter Form - Fixed responsive layout */}
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                                <input
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm border border-white border-opacity-20 rounded-lg sm:rounded-l-lg sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-white placeholder-gray-400 text-sm sm:text-base min-w-0"
+                                />
+                                <button className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg sm:rounded-l-none sm:rounded-r-lg hover:from-cyan-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base font-medium whitespace-nowrap">
+                                    Subscribe
+                                </button>
+                            </div>
+
+                            {/* Social Links */}
+                            <div className="flex flex-wrap gap-3 sm:gap-4 pt-4">
+                                {socialLinks.map((social, index) => {
+                                    const IconComponent = social.icon;
+                                    return (
+                                        <a
+                                            key={index}
+                                            href={social.href}
+                                            aria-label={social.label}
+                                            className={`text-gray-400 ${social.color} transition-all duration-300 transform hover:scale-125 hover:-translate-y-1`}
+                                        >
+                                            <IconComponent size={20} className="sm:w-6 sm:h-6" />
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px bg-gradient-to-r from-transparent via-white via-opacity-20 to-transparent mb-6 sm:mb-8"></div>
+
+                {/* Bottom section */}
+                <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-sm sm:text-base">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start space-x-2 text-gray-300">
+                        <span>© {currentYear} YourBrand. Made with</span>
+                        <FaHeart className="text-red-500 animate-pulse" />
+                        <span>in San Francisco</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center space-x-3 sm:space-x-6 text-xs sm:text-sm text-gray-300">
+                        <a href="#" className="hover:text-cyan-400 transition-colors duration-300 whitespace-nowrap">Privacy Policy</a>
+                        <span className="text-gray-600 hidden sm:inline">|</span>
+                        <a href="#" className="hover:text-cyan-400 transition-colors duration-300 whitespace-nowrap">Terms of Service</a>
+                        <span className="text-gray-600 hidden sm:inline">|</span>
+                        <a href="#" className="hover:text-cyan-400 transition-colors duration-300 whitespace-nowrap">Cookie Policy</a>
+                    </div>
+                </div>
+            </div>
+
+            {/* Scroll to top button */}
+            {isVisible && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-4 sm:bottom-8 right-4 sm:right-8 p-3 sm:p-4 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full shadow-2xl hover:shadow-cyan-500/25 transition-all duration-300 transform hover:scale-110 z-50"
+                    aria-label="Scroll to top"
+                >
+                    <FaArrowUp className="text-white w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+            )}
+
+            {/* Top gradient line */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 animate-pulse"></div>
+        </footer>
+    );
+};
+
+export default Footer;
+// D:\web-dev\nextjs-tut\e-commerce\app\components\Header.jsx
+'use client';
+import React, { useState, useEffect, useRef } from 'react';
+import { FiSearch, FiUser, FiHeart, FiShoppingBag, FiX, FiMenu, FiLogOut } from 'react-icons/fi';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import { useCartStore } from '../store/useCartStore';
+import useAuthStore from '../store/useAuthStore';
+
+// Import the store instance itself for direct state manipulation
+import { useCartStore as cartStore } from '../store/useCartStore';
+
+const Header = () => {
+    const router = useRouter();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+    const mobileMenuRef = useRef(null);
+
+    const { user, clearAuth } = useAuthStore();
+    const cart = useCartStore((state) => state.cart);
+    const navLinks = [
+        { name: "MEN", href: "/products?category=men" },
+        { name: "WOMEN", href: "/products?category=women" },
+        { name: "KIDS", href: "/products?category=kids" },
+        { name: "BEAUTY", href: "/products?category=beauty" },
+        { name: "STUDIO", href: "/products?category=studio" },
+    ];
+
+    const handleLogout = async () => {
+        try {
+            const response = await fetch('/api/users/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                // Clear auth state
+                clearAuth();
+                localStorage.removeItem('auth_user');
+                setProfileDropdownOpen(false);
+
+                // Clear cart state
+                useCartStore.getState().clearCart();
+                localStorage.removeItem('cart-storage');
+
+                window.dispatchEvent(new CustomEvent('authStateChange', {
+                    detail: { type: 'logout' }
+                }));
+
+                toast.success('Logged out successfully');
+                router.push('/login');
+                if (isMobileMenuOpen) {
+                    closeMobileMenu();
+                }
+            }
+        } catch (error) {
+            console.error('Logout failed:', error);
+            toast.error('Failed to logout');
+        }
+    };
+
+
+
+
+
+    // Toggle mobile menu
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
+
+    // Close mobile menu
+    const closeMobileMenu = () => {
+        setIsMobileMenuOpen(false);
+    };
+
+    // Handle backdrop click for menu
+    const handleMenuBackdropClick = (e) => {
+        if (e.target === e.currentTarget) {
+            closeMobileMenu();
+        }
+    };
+
+    // Handle menu item click
+    const handleMenuItemClick = () => {
+        closeMobileMenu();
+    };
+
+    // Prevent body scroll when menu is open
+    useEffect(() => {
+        if (isMobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        // Cleanup on unmount
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isMobileMenuOpen]);
+
+    return (
+        <>
+            <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                        <div className="logo-and-nav flex items-center">
+                            {/* Logo Section */}
+                            <div className="flex items-center mr-4">
+                                <Link href="/">
+                                    <div className="flex-shrink-0 cursor-pointer">
+                                        <div className="w-8 h-8 rounded-md overflow-hidden relative">
+                                            <Image
+                                                src="/logo.png"
+                                                alt="Logo"
+                                                fill
+                                                className="object-cover"
+                                                sizes="32px"
+                                                priority
+                                            />
+                                        </div>
+                                    </div>
+                                </Link>
+                            </div>
+
+                            {/* Navigation Menu - Desktop */}
+                            <nav className="hidden md:flex space-x-8 justify-start ml-4">
+                                {navLinks.map((link) => (
+                                    <Link
+                                        key={link.name}
+                                        href={link.href}
+                                        className="text-gray-900 hover:text-pink-500 sm:px-0.5 sm:py-0.5 text-sm font-medium transition-colors duration-200 mr-1.5 md:px-2 md:py-2"
+                                    >
+                                        {link.name}
+                                    </Link>
+                                ))}
+                            </nav>
+                        </div>
+
+                        {/* Search and Icons Section */}
+                        <div className="flex items-center space-x-4">
+                            {/* Search Bar - Desktop */}
+                            <div className="hidden lg:block">
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <FiSearch className="h-4 w-4 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search for products, brands and more"
+                                        className="block w-80 pl-10 pr-3 py-2 border text-pink-500 border-gray-300 rounded-md leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-pink-500 focus:border-pink-500 text-sm"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Icons - Desktop */}
+                            <div className="hidden md:flex items-center space-x-6">
+                                {/* Search Icon for tablet */}
+                                <button
+                                    className="lg:hidden text-gray-600 hover:text-pink-500 transition-colors duration-200"
+                                    aria-label="Search"
+                                >
+                                    <FiSearch className="h-5 w-5" />
+                                </button>
+
+                                {/* Profile Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        onMouseEnter={() => setProfileDropdownOpen(true)}
+                                        onMouseLeave={() => setProfileDropdownOpen(false)}
+                                        className="flex flex-col items-center text-gray-600 hover:text-pink-500 transition-colors duration-200 cursor-pointer"
+                                        aria-label="Profile Menu"
+                                    >
+                                        <FiUser className="h-5 w-5" />
+                                        <span className="text-xs mt-1 hidden sm:block">Profile</span>
+                                    </button>
+
+                                    <div
+                                        onMouseEnter={() => setProfileDropdownOpen(true)}
+                                        onMouseLeave={() => setProfileDropdownOpen(false)}
+                                        className={`absolute left-1/2 -translate-x-1/2 top-full w-60 bg-white border border-gray-200 shadow-lg rounded-md z-50 transition-all duration-200 ${profileDropdownOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}
+                                    >
+                                        {user ? (
+                                            // User is logged in
+                                            <>
+                                                <div className="p-4 border-b">
+                                                    <p className="text-sm font-semibold text-gray-800">Welcome Back!</p>
+                                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                                </div>
+                                                <div className="p-2 text-sm space-y-2">
+                                                    <Link href="/profile" className="block text-gray-500 hover:text-pink-500 cursor-pointer py-1">
+                                                        My Profile
+                                                    </Link>
+                                                    <Link href="/orders" className="block text-gray-500 hover:text-pink-500 cursor-pointer py-1">
+                                                        Orders
+                                                    </Link>
+                                                    <Link href="/wishlist" className="block text-gray-500 hover:text-pink-500 cursor-pointer py-1">
+                                                        Wishlist
+                                                    </Link>
+                                                    <Link href="/contact" className="block text-gray-500 hover:text-pink-500 cursor-pointer py-1">
+                                                        Contact Us
+                                                    </Link>
+                                                    <button
+                                                        onClick={handleLogout}
+                                                        className="block w-full text-left text-red-600 hover:text-red-700 cursor-pointer py-1 font-medium"
+                                                    >
+                                                        <div className="flex items-center">
+                                                            <FiLogOut className="h-4 w-4 mr-2" />
+                                                            Log Out
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            // User is not logged in
+                                            <>
+                                                <div className="p-4 border-b">
+                                                    <p className="text-sm font-semibold text-gray-800">Welcome</p>
+                                                    <p className="text-xs text-gray-500">To access account and manage orders</p>
+                                                    <Link
+                                                        href="/login"
+                                                        className="mt-2 text-pink-600 border border-pink-500 text-xs font-semibold px-3 py-1 rounded hover:bg-pink-50 transition cursor-pointer inline-block text-center"
+                                                        aria-label="Login or Signup"
+                                                    >
+                                                        LOGIN / SIGNUP
+                                                    </Link>
+                                                </div>
+                                                <div className="p-2 text-sm space-y-2">
+                                                    <a href="#" className="block text-gray-500 hover:text-pink-500 cursor-pointer">Orders</a>
+                                                    <a href="#" className="block text-gray-500 hover:text-pink-500 cursor-pointer">Wishlist</a>
+                                                    <a href="#" className="block text-gray-500 hover:text-pink-500 cursor-pointer">Contact Us</a>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <Link href="/wishlist"
+                                    className="flex flex-col items-center text-gray-600 hover:text-pink-500 transition-colors duration-200 cursor-pointer"
+                                    aria-label="Wishlist"
+                                >
+                                    <FiHeart className="h-5 w-5" />
+                                    <span className="text-xs mt-1 hidden sm:block">Wishlist</span>
+                                </Link>
+
+                                <Link href="/cart" className="relative flex flex-col items-center text-gray-600 hover:text-pink-500 transition-colors duration-200 cursor-pointer">
+                                    <FiShoppingBag className="h-5 w-5" />
+                                    <span className="text-xs mt-1 hidden sm:block">Bag</span>
+                                    {cart.length > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                            {cart.length}
+                                        </span>
+                                    )}
+                                </Link>
+                            </div>
+
+                            {/* Mobile Icons */}
+                            <div className="flex md:hidden items-center space-x-3">
+                                <button
+                                    className="text-gray-600 hover:text-pink-600 transition-all duration-300 p-2 hover:bg-pink-50 rounded-full"
+                                    aria-label="Search"
+                                >
+                                    <FiSearch className="h-5 w-5" />
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={toggleMobileMenu}
+                                    className="text-gray-600 hover:text-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500 p-2 hover:bg-pink-50 rounded-full transition-all duration-300"
+                                    aria-label="Toggle Mobile Menu"
+                                    aria-expanded={isMobileMenuOpen}
+                                >
+                                    <FiMenu className="h-6 w-6" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {isMobileMenuOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+                    onClick={handleMenuBackdropClick}
+                    aria-hidden="true"
+                />
+            )}
+
+            <div
+                ref={mobileMenuRef}
+                className={`mobile-container fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl transform transition-all duration-300 ease-out z-50 md:hidden flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="mobile-menu-title"
+            >
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-purple-50 flex-shrink-0">
+                    <h2 id="mobile-menu-title" className="text-lg font-bold text-gray-900">Menu</h2>
+                    <button
+                        onClick={closeMobileMenu}
+                        className="text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500 rounded-full p-2 hover:bg-white/80 transition-all duration-300"
+                        aria-label="Close Mobile Menu"
+                    >
+                        <FiX className="h-6 w-6" />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto">
+                    <nav className="px-4 py-6">
+                        {navLinks.map((link, index) => (
+                            <Link
+                                key={link.name}
+                                href={link.href}
+                                onClick={handleMenuItemClick}
+                                className="block text-gray-800 hover:text-pink-600 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 px-1 py-1 text-base font-medium rounded-xl transition-all duration-300 transform hover:scale-105 mb-2"
+                                style={{ animationDelay: `${index * 50}ms` }}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+                        <Link
+                            href="/studio"
+                            onClick={handleMenuItemClick}
+                            className="block text-gray-800 hover:text-pink-600 hover:bg-gradient-to-r hover:from-pink-50 hover:to-purple-50 px-1 py-1 text-base font-medium rounded-xl transition-all duration-300 transform hover:scale-105 mb-2"
+                        >
+                            <div className="flex items-center justify-between">
+                                <span>STUDIO</span>
+                                <span className="bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs px-3 py-1 rounded-full font-bold animate-pulse">
+                                    NEW
+                                </span>
+                            </div>
+                        </Link>
+                    </nav>
+
+                    <div className="border-t border-gray-200 bg-gray-50/50">
+                        <div className="px-4 py-6">
+                            <div className="mb-6">
+                                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                                    {user ? (
+                                        // User is logged in - Mobile
+                                        <>
+                                            <p className="text-sm font-semibold text-gray-800 mb-1">Welcome Back!</p>
+                                            <p className="text-xs text-gray-500 mb-4">{user.email}</p>
+                                            <button
+                                                onClick={handleLogout}
+                                                className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-bold px-4 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center"
+                                            >
+                                                <FiLogOut className="h-4 w-4 mr-2" />
+                                                LOG OUT
+                                            </button>
+                                        </>
+                                    ) : (
+                                        // User is not logged in - Mobile
+                                        <>
+                                            <p className="text-sm font-semibold text-gray-800 mb-1">Welcome Back!</p>
+                                            <p className="text-xs text-gray-500 mb-4">Access your account and manage orders</p>
+                                            <Link
+                                                href="/login"
+                                                onClick={handleMenuItemClick}
+                                                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold px-4 py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg inline-block text-center"
+                                            >
+                                                LOGIN / SIGNUP
+                                            </Link>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 pb-4">
+                                <Link
+                                    href="/profile"
+                                    onClick={handleMenuItemClick}
+                                    className="flex items-center text-gray-700 hover:text-pink-600 hover:bg-white px-4 py-3 rounded-xl transition-all duration-300 transform hover:scale-105"
+                                >
+                                    <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full flex items-center justify-center mr-3">
+                                        <FiUser className="h-4 w-4 text-pink-600" />
+                                    </div>
+                                    <span className="text-sm font-medium">My Profile</span>
+                                </Link>
+                                <Link
+                                    href="/wishlist"
+                                    onClick={handleMenuItemClick}
+                                    className="flex items-center text-gray-700 hover:text-pink-600 hover:bg-white px-4 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 relative"
+                                >
+                                    <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full flex items-center justify-center mr-3">
+                                        <FiHeart className="h-4 w-4 text-pink-600" />
+                                    </div>
+                                    <span className="text-sm font-medium">Wishlist</span>
+                                    <span className="ml-auto bg-pink-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold">3</span>
+                                </Link>
+                                <Link
+                                    href="/orders"
+                                    onClick={handleMenuItemClick}
+                                    className="flex items-center text-gray-700 hover:text-pink-600 hover:bg-white px-4 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 relative"
+                                >
+                                    <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full flex items-center justify-center mr-3">
+                                        <FiShoppingBag className="h-4 w-4 text-pink-600" />
+                                    </div>
+                                    <span className="text-sm font-medium">My Orders</span>
+                                    <span className="ml-auto bg-pink-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold">2</span>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
+
+export default Header;
+
+// app/components/NewProducts.jsx
+"use client";
+import { useState } from 'react';
+
+import ProductCard from './ProductCard';
+import { products } from '../lib/data/products';
+
+const getNewProductsProducts = (limit = 12) => {
+    return products.filter(product => product.isBestSeller).slice(0, limit);
+};
+
+export default function NewProducts() {
+    const NewProductsProducts = getNewProductsProducts(12);
+
+    return (
+        <main className="bg-white">
+            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+                <div className="flex justify-between items-baseline mb-12 border-b pb-4">
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                        New Products
+                    </h1>
+                    <a
+                        href="/products?category=all"
+                        className="text-sm font-semibold text-gray-700 hover:text-black hover:underline underline-offset-4 transition-colors"
+                    >
+                        Shop All Products
+                    </a>
+                </div>
+
+                <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-6 xl:gap-x-8">
+                    {NewProductsProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                </div>
+            </div>
+        </main>
+    );
+}
+
+'use client';
+import React, { useState, useEffect } from 'react';
+import { FiMail, FiArrowRight, FiCheck, FiStar } from 'react-icons/fi';
+
+const NewsletterSection = () => {
+    const [email, setEmail] = useState('');
+    const [isSubscribed, setIsSubscribed] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [particles, setParticles] = useState([]);
+
+    useEffect(() => {
+        // Generate floating particles
+        const newParticles = Array.from({ length: 20 }, (_, i) => ({
+            id: i,
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            size: Math.random() * 4 + 2,
+            speed: Math.random() * 2 + 1,
+            opacity: Math.random() * 0.5 + 0.3,
+        }));
+        setParticles(newParticles);
+
+        // Animate particles
+        const interval = setInterval(() => {
+            setParticles(prev => prev.map(particle => ({
+                ...particle,
+                y: particle.y <= -10 ? 110 : particle.y - particle.speed * 0.1,
+                x: particle.x + Math.sin(Date.now() * 0.001 + particle.id) * 0.1,
+            })));
+        }, 50);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleSubmit = (e) => {
+        if (email) {
+            setIsSubscribed(true);
+            setTimeout(() => {
+                setIsSubscribed(false);
+                setEmail('');
+            }, 3000);
+        }
+    };
+
+    return (
+        <section className="py-6 relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+            {/* Animated Background */}
+            <div className="absolute inset-0 opacity-30">
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 animate-pulse"></div>
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
+            </div>
+
+            {/* Floating Particles */}
+            {particles.map(particle => (
+                <div
+                    key={particle.id}
+                    className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+                    style={{
+                        left: `${particle.x}%`,
+                        top: `${particle.y}%`,
+                        width: `${particle.size}px`,
+                        height: `${particle.size}px`,
+                        opacity: particle.opacity,
+                        boxShadow: `0 0 ${particle.size * 2}px rgba(255,255,255,0.5)`,
+                    }}
+                />
+            ))}
+
+            {/* Grid Pattern Overlay */}
+            <div className="absolute inset-0 opacity-10" style={{
+                backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+                backgroundSize: '50px 50px'
+            }}></div>
+
+            {/* Main Content */}
+            <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
+                {/* Glowing Orb */}
+                <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 w-40 h-40 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full blur-3xl opacity-20 animate-pulse"></div>
+
+                {/* Icon Container */}
+                <div className="relative mb-0 mt-4">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 mb-6 shadow-2xl shadow-purple-500/25">
+                        <FiMail className="w-10 h-10 text-white animate-bounce" />
+                    </div>
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 animate-ping opacity-20"></div>
+                </div>
+
+                {/* Title with Gradient Text */}
+                <h2 className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-white via-cyan-200 to-purple-200 bg-clip-text text-transparent leading-tight">
+                    Join the Future
+                </h2>
+
+                {/* Subtitle */}
+                <p className="text-xl md:text-2xl text-gray-300 mb-4 font-light tracking-wide">
+                    Be the first to experience tomorrow's innovations
+                </p>
+
+                {/* Feature Pills */}
+                <div className="flex flex-wrap justify-center gap-3 mb-12">
+                    {['Exclusive Access', 'Early Bird Offers', 'VIP Community'].map((feature, index) => (
+                        <div key={index} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
+                            <FiStar className="w-4 h-4 text-yellow-400" />
+                            <span className="text-sm font-medium text-white">{feature}</span>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Form Container */}
+                <div className="relative">
+                    {/* Glassmorphism Container */}
+                    <div className="relative max-w-lg mx-auto p-8 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/20">
+                        {/* Success State */}
+                        {isSubscribed && (
+                            <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-xl border border-green-500/30 z-20">
+                                <div className="text-center">
+                                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500 mb-4 shadow-lg shadow-green-500/25">
+                                        <FiCheck className="w-8 h-8 text-white animate-bounce" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-white mb-2">Welcome Aboard!</h3>
+                                    <p className="text-green-200">You're now part of the future</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Input Container */}
+                        <div className="relative">
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                {/* Email Input */}
+                                <div className="relative flex-1">
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="Enter your email address"
+                                        className="w-full px-6 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300 font-medium"
+                                        required
+                                    />
+                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                                </div>
+
+                                {/* Submit Button */}
+                                <button
+                                    type="button"
+                                    onClick={handleSubmit}
+                                    onMouseEnter={() => setIsHovered(true)}
+                                    onMouseLeave={() => setIsHovered(false)}
+                                    className="relative group px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold rounded-2xl shadow-2xl shadow-purple-500/25 hover:shadow-cyan-500/25 transition-all duration-500 transform hover:scale-105 hover:-translate-y-1 min-w-[140px]"
+                                    disabled={isSubscribed}
+                                >
+                                    <span className="relative z-10 flex items-center justify-center gap-2">
+                                        Subscribe
+                                        <FiArrowRight className={`w-5 h-5 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
+                                    </span>
+
+                                    {/* Button Glow Effect */}
+                                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500 to-purple-600 blur opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+
+                                    {/* Shimmer Effect */}
+                                    <div className="absolute inset-0 rounded-2xl overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Privacy Text */}
+                        <p className="text-xs text-gray-400 mt-4 text-center">
+                            No spam, unsubscribe anytime. Your privacy is our priority.
+                        </p>
+                    </div>
+
+                    {/* Decorative Elements */}
+                    <div className="absolute -top-4 -left-4 w-8 h-8 border-l-2 border-t-2 border-cyan-500 opacity-50"></div>
+                    <div className="absolute -bottom-4 -right-4 w-8 h-8 border-r-2 border-b-2 border-purple-500 opacity-50"></div>
+                </div>
+
+                {/* Bottom Stats */}
+                <div className="mt-16 flex justify-center items-center gap-8 text-sm text-gray-400">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span>25K+ Subscribers</span>
+                    </div>
+                    <div className="w-px h-4 bg-gray-600"></div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
+                        <span>99.9% Uptime</span>
+                    </div>
+                    <div className="w-px h-4 bg-gray-600"></div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                        <span>Weekly Updates</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Additional Glow Effects */}
+            <div className="absolute top-1/4 left-0 w-96 h-96 bg-gradient-to-r from-cyan-500/10 to-transparent rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-gradient-to-l from-purple-500/10 to-transparent rounded-full blur-3xl"></div>
+        </section>
+    );
+};
+
+export default NewsletterSection;
+// app/components/ProductCard.jsx
+"use client";
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { FiHeart } from 'react-icons/fi';
+import { useWishlistStore } from '../store/useWishlistStore';
+import { toast } from 'react-hot-toast';
+import useAuthStore from '../store/useAuthStore';
+
+const SaleBadge = () => (
+    <div className="absolute top-4 left-4 bg-[#DB4444] text-white text-[11px] font-medium tracking-wide px-3 py-1 rounded-sm">
+        Sale
+    </div>
+);
+
+const Price = ({ product }) => (
+    <div className="mt-2 text-base">
+        {product.onSale ? (
+            <div className="flex items-center justify-center gap-3">
+                <span className="text-gray-900 font-semibold">${product.price.toFixed(2)}</span>
+                <span className="text-gray-400 line-through">${product.originalPrice.toFixed(2)}</span>
+            </div>
+        ) : (
+            <span className="font-semibold text-gray-900">${product.price.toFixed(2)}</span>
+        )}
+    </div>
+);
+
+// Function to check if image exists without triggering 404 in console
+const checkImageExists = async (src) => {
+    try {
+        const response = await fetch(src, { method: 'HEAD' });
+        return response.ok;
+    } catch {
+        return false;
+    }
+};
+
+export default function ProductCard({ product }) {
+    const [imageSrc, setImageSrc] = useState('/placeholder.jpg');
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Wishlist store
+    const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
+    const inWishlist = isInWishlist(product.id);
+
+    // Move productDetailsUrl inside the component where product is available
+    const productDetailsUrl = `/product/${product.id}` || `/product/${product.slug}`;
+
+    useEffect(() => {
+        const loadImage = async () => {
+            // Try different possible image sources
+            const possibleImageSrc = product.imageSrc || product.image || product.images?.[0];
+
+            // If no image source provided, use placeholder
+            if (!possibleImageSrc || typeof possibleImageSrc !== 'string' || possibleImageSrc.trim() === '') {
+                setImageSrc('/placeholder.jpg');
+                setIsLoading(false);
+                return;
+            }
+
+            // Check if the original image exists
+            const imageExists = await checkImageExists(possibleImageSrc);
+
+            if (imageExists) {
+                setImageSrc(possibleImageSrc);
+            } else {
+                setImageSrc('/placeholder.jpg');
+            }
+
+            setIsLoading(false);
+        };
+
+        loadImage();
+    }, [product.imageSrc, product.image, product.images]);
+
+    const handleImageError = () => {
+        // Final fallback if image fails to load even after our check
+        if (imageSrc !== '/placeholder.jpg') {
+            setImageSrc('/placeholder.jpg');
+        }
+    };
+
+    const handleWishlistClick = (e) => {
+        e.preventDefault(); // Prevent navigation to product details
+        e.stopPropagation();
+
+        const isAuthenticated = useAuthStore.getState().isAuthenticated;
+
+        if (!isAuthenticated) {
+            toast.error('Please login to add items to your wishlist');
+            return;
+        }
+
+        const wishlistProduct = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            imageSrc: product.imageSrc || product.image || product.images?.[0] || '/placeholder.jpg',
+            department: product.department,
+            category: product.category,
+            subcategory: product.subcategory
+        };
+
+        if (inWishlist) {
+            removeFromWishlist(product.id);
+            toast.success('Removed from wishlist');
+        } else {
+            const success = addToWishlist(wishlistProduct);
+            if (success) {
+                toast.success('Added to wishlist');
+            }
+        }
+    };
+
+    return (
+        <div className="group relative">
+            <Link href={productDetailsUrl} className="block">
+                <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden cursor-pointer">
+                    {isLoading ? (
+                        <div className="w-full h-full bg-gray-200 animate-pulse flex items-center justify-center">
+                            <div className="text-gray-400 text-sm">Loading...</div>
+                        </div>
+                    ) : (
+                        <img
+                            src={imageSrc}
+                            alt={product.name}
+                            onError={handleImageError}
+                            className="object-contain object-center w-full h-full transition-transform duration-300 ease-in-out group-hover:scale-105"
+                        />
+                    )}
+                    {product.onSale && <SaleBadge />}
+
+                    {/* Wishlist Button - positioned absolutely over the image */}
+                    <button
+                        onClick={handleWishlistClick}
+                        className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-sm transition-all duration-300 z-10 ${inWishlist
+                            ? 'bg-red-500 text-white shadow-lg'
+                            : 'bg-white/80 text-gray-600 hover:bg-red-500 hover:text-white'
+                            } opacity-0 group-hover:opacity-100 hover:scale-110`}
+                        aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+                    >
+                        <FiHeart
+                            className={`w-5 h-5 ${inWishlist ? 'fill-current' : ''}`}
+                        />
+                    </button>
+                </div>
+                <div className="mt-4 text-center">
+                    <h3 className="text-base font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors duration-200">
+                        {product.name}
+                    </h3>
+                    <Price product={product} />
+                </div>
+            </Link>
+        </div>
+    );
+}
+// D:\web-dev\nextjs-tut\e-commerce\app\components\ProductDetailsPage.jsx
+'use client';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import toast, { Toaster } from 'react-hot-toast';
+import {
+    FiHeart, FiShare2, FiShoppingCart, FiStar, FiCheck,
+    FiTruck, FiRefreshCw, FiShield, FiZap, FiEye, FiThumbsUp,
+    FiMinus, FiPlus, FiShoppingBag, FiArrowRight
+} from 'react-icons/fi';
+import { useCartStore } from '../store/useCartStore'; // Import cart store
+import { useWishlistStore } from '../store/useWishlistStore'; // Import wishlist store
+import { isAuthenticated } from '../lib/utils/auth'; // Import auth utility
+
+// Animation Variants for Framer Motion
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+    }
+};
+
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } }
+};
+
+export default function ProductDetailsPage({ product = mockProduct }) {
+    const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || '');
+    const [selectedColor, setSelectedColor] = useState(product.colors?.find(c => c.available)?.name || '');
+    const [quantity, setQuantity] = useState(1);
+    const [userAuthenticated, setUserAuthenticated] = useState(false); // Track auth state
+    const [selectedImage, setSelectedImage] = useState(0);
+    const [isLiked, setIsLiked] = useState(false);
+    const [activeTab, setActiveTab] = useState('description');
+
+    // Get cart store methods
+    const { addToCart } = useCartStore();
+
+    // Get wishlist store methods
+    const { addToWishlist, removeFromWishlist, isInWishlist: checkIsInWishlist } = useWishlistStore();
+
+    // Check if product is in wishlist
+    const isInWishlist = checkIsInWishlist(product.id);
+
+    const getSafeArray = (arr) => Array.isArray(arr) ? arr : [];
+
+    // Check authentication status on component mount and set up listeners
+    useEffect(() => {
+        const checkAuthStatus = () => {
+            setUserAuthenticated(isAuthenticated());
+        };
+
+        // Initial check
+        checkAuthStatus();
+
+        // Listen for auth state changes
+        const handleAuthChange = () => {
+            checkAuthStatus();
+        };
+
+        const handleStorageChange = (e) => {
+            if (e.key === 'auth_user' || e.key === 'auth_change') {
+                checkAuthStatus();
+            }
+        };
+
+        window.addEventListener('authStateChange', handleAuthChange);
+        window.addEventListener('storage', handleStorageChange);
+
+        // Cleanup listeners
+        return () => {
+            window.removeEventListener('authStateChange', handleAuthChange);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
+    useEffect(() => {
+        getSafeArray(product.images).forEach(imageSrc => {
+            const img = new Image();
+            img.src = imageSrc;
+        });
+    }, [product.images]);
+
+    const handleAddToCart = () => {
+        // Validate size selection
+        if (getSafeArray(product.sizes).length > 0 && !selectedSize) {
+            toast.error('Please select a size', {
+                style: {
+                    borderRadius: '12px',
+                    background: '#fef2f2',
+                    color: '#dc2626',
+                    border: '1px solid #fecaca'
+                },
+                iconTheme: {
+                    primary: '#dc2626',
+                    secondary: '#fef2f2'
+                }
+            });
+            return;
+        }
+
+        // Validate color selection
+        if (getSafeArray(product.colors).length > 0 && !selectedColor) {
+            toast.error('Please select a color', {
+                style: {
+                    borderRadius: '12px',
+                    background: '#fef2f2',
+                    color: '#dc2626',
+                    border: '1px solid #fecaca'
+                },
+                iconTheme: {
+                    primary: '#dc2626',
+                    secondary: '#fef2f2'
+                }
+            });
+            return;
+        }
+
+        // Attempt to add to cart (this will handle authentication redirect internally)
+        const success = addToCart(
+            {
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                imageSrc: product.images?.[0] || '/placeholder.jpg'
+            },
+            selectedSize,
+            selectedColor,
+            quantity
+        );
+
+        // Only show success toast if the item was actually added to cart
+        if (success) {
+            toast.success('Item added to cart', {
+                style: {
+                    borderRadius: '12px',
+                    background: '#f0fdf4',
+                    color: '#16a34a',
+                    border: '1px solid #bbf7d0',
+                    fontWeight: '600'
+                },
+                iconTheme: {
+                    primary: '#16a34a',
+                    secondary: '#f0fdf4'
+                },
+                duration: 3000
+            });
+        }
+        // If success is false, the user has been redirected to login
+    };
+
+    const handleWishlistToggle = () => {
+        // Create the product object for the wishlist
+        const wishlistProduct = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            imageSrc: product.images?.[0] || '/placeholder.jpg',
+            department: product.department,
+            category: product.category,
+            subcategory: product.subcategory
+        };
+
+        if (isInWishlist) {
+            removeFromWishlist(product.id);
+            toast('Removed from wishlist', {
+                style: {
+                    borderRadius: '12px',
+                    background: '#f8fafc',
+                    color: '#64748b',
+                    border: '1px solid #e2e8f0'
+                }
+            });
+        } else {
+            const success = addToWishlist(wishlistProduct);
+            if (success) {
+                toast.success('Added to wishlist', {
+                    style: {
+                        borderRadius: '12px',
+                        background: '#fef7f0',
+                        color: '#ea580c',
+                        border: '1px solid #fed7aa'
+                    },
+                    iconTheme: {
+                        primary: '#ea580c',
+                        secondary: '#fef7f0'
+                    }
+                });
+            }
+            // If success is false, user was redirected to login
+        }
+    };
+
+    const tabs = [
+        { id: 'description', label: 'Description', icon: FiEye },
+        { id: 'specs', label: 'Specifications', icon: FiZap },
+        { id: 'reviews', label: 'Reviews', icon: FiThumbsUp }
+    ];
+
+    if (!product) {
+        return <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-800 p-10">Product not found.</div>;
+    }
+
+    return (
+        <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
+            <Toaster position="top-center" />
+
+            <div className="absolute inset-0 z-0 opacity-20">
+                <div className="absolute top-0 left-0 w-1/3 h-2/3 bg-gradient-to-br from-indigo-200 to-transparent rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-gradient-to-tl from-purple-200 to-transparent rounded-full blur-3xl"></div>
+            </div>
+
+            <div className="relative z-10 container mx-auto p-4 sm:p-8 lg:p-12">
+                <motion.div
+                    className="grid lg:grid-cols-2 lg:gap-16 items-start"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    {/* --- Image Gallery --- */}
+                    <motion.div className="w-full lg:sticky lg:top-8 space-y-4" variants={itemVariants}>
+                        <div className="relative aspect-square rounded-3xl overflow-hidden bg-white shadow-2xl shadow-slate-200">
+                            <AnimatePresence mode="wait">
+                                <motion.img
+                                    key={selectedImage}
+                                    src={product.images?.[selectedImage] || '/placeholder.jpg'}
+                                    alt={product.name}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ duration: 0.4, ease: 'easeInOut' }}
+                                    className="w-full h-full object-cover"
+                                />
+                            </AnimatePresence>
+                        </div>
+                        <div className="grid grid-cols-4 gap-3">
+                            {getSafeArray(product.images).map((img, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setSelectedImage(index)}
+                                    className={`relative aspect-square rounded-2xl overflow-hidden transition-all duration-300 ease-in-out outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 ${selectedImage === index
+                                        ? 'ring-2 ring-indigo-500 shadow-lg'
+                                        : 'opacity-70 hover:opacity-100 hover:scale-105'
+                                        }`}
+                                >
+                                    <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                                </button>
+                            ))}
+                        </div>
+                    </motion.div>
+
+                    {/* --- Product Info --- */}
+                    <motion.div className="space-y-8 mt-12 lg:mt-0" variants={itemVariants}>
+                        {/* Header */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <span className="inline-block px-3 py-1 text-sm font-medium text-indigo-700 bg-indigo-100 rounded-full">{product.department}</span>
+                                <div className="flex items-center gap-3">
+                                    {/* <button onClick={() => setIsLiked(!isLiked)} className={`p-2 rounded-full transition-colors duration-300 ${isLiked ? 'text-red-500 bg-red-100' : 'text-slate-500 hover:bg-slate-100'}`}>
+                                        <FiHeart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                                    </button> */}
+                                    <button className="p-2 rounded-full text-slate-500 hover:bg-slate-100 transition-colors duration-300"><FiShare2 className="w-5 h-5" /></button>
+                                </div>
+                            </div>
+                            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">{product.name}</h1>
+                        </div>
+
+                        {/* Rating & Price */}
+                        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-3">
+                            <div className="flex items-center gap-1.5">
+                                {[...Array(5)].map((_, i) => <FiStar key={i} className={`w-5 h-5 ${i < Math.floor(product.rating || 0) ? 'text-amber-500 fill-current' : 'text-slate-300'}`} />)}
+                                <span className="ml-1 text-lg font-semibold text-slate-800">{product.rating}</span>
+                                <span className="text-sm text-slate-500">({product.reviewCount} reviews)</span>
+                            </div>
+                            <div className="flex items-baseline gap-3">
+                                <span className="text-4xl font-bold text-slate-900">${product.price.toFixed(2)}</span>
+                                {product.onSale && (
+                                    <span className="text-xl text-slate-400 line-through">${product.originalPrice?.toFixed(2)}</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Size Selection */}
+                        {getSafeArray(product.sizes).length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-slate-900">Size</h3>
+                                <div className="flex flex-wrap gap-3">
+                                    {getSafeArray(product.sizes).map((size) => (
+                                        <button key={size} onClick={() => setSelectedSize(size)}
+                                            className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 border ${selectedSize === size ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' : 'bg-white border-slate-200 hover:border-slate-400'}`}>
+                                            {size}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Color Selection */}
+                        {getSafeArray(product.colors).length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-slate-900">Color: <span className="font-normal text-slate-600">{selectedColor}</span></h3>
+                                <div className="flex items-center gap-3">
+                                    {getSafeArray(product.colors).map((color) => (
+                                        <button key={color.name} onClick={() => color.available && setSelectedColor(color.name)} disabled={!color.available}
+                                            className={`relative w-10 h-10 rounded-full border-2 transition-all duration-300 flex items-center justify-center
+                                            ${selectedColor === color.name ? 'border-indigo-500 scale-110' : 'border-slate-200'}
+                                            ${!color.available ? 'opacity-50 cursor-not-allowed' : 'hover:border-slate-400'}`}
+                                            style={{ backgroundColor: color.color }}
+                                            aria-label={color.name}
+                                        >
+                                            {!color.available && <div className="absolute w-full h-0.5 bg-slate-500 transform rotate-45"></div>}
+                                            {selectedColor === color.name && <FiCheck className="w-5 h-5 text-white mix-blend-difference" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Quantity & Actions */}
+                        <div className="pt-6 border-t border-slate-200 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-slate-900">Quantity</h3>
+                                <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors flex items-center justify-center"><FiMinus /></button>
+                                    <span className="w-12 text-center text-lg font-semibold text-slate-900">{quantity}</span>
+                                    <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors flex items-center justify-center"><FiPlus /></button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button
+                                    onClick={handleAddToCart}
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-6 rounded-xl font-bold text-base flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-100 transition-transform duration-300 shadow-lg shadow-indigo-200 group"
+                                >
+                                    <FiShoppingCart className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
+                                    <span>Add to Cart</span>
+                                </button>
+                                <button
+                                    onClick={handleWishlistToggle}
+                                    className={`w-full py-4 px-6 rounded-xl font-semibold text-base flex items-center justify-center gap-2 border transition-all duration-300 ${isInWishlist
+                                        ? 'bg-red-100 border-red-200 text-red-600 hover:bg-red-200/70'
+                                        : 'bg-transparent border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-slate-400'
+                                        }`}
+                                >
+                                    <FiHeart className={`w-5 h-5 ${isInWishlist ? 'fill-current' : ''}`} />
+                                    <span>{isInWishlist ? 'In Wishlist' : 'Add to Wishlist'}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Features List */}
+                        {getSafeArray(product.features).length > 0 && (
+                            <div className="space-y-4">
+                                {getSafeArray(product.features).map((feature, i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                                            <FiCheck className="w-3.5 h-3.5" />
+                                        </div>
+                                        <span className="text-slate-600">{feature}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+                </motion.div>
+
+                {/* --- Tabs Section --- */}
+                <motion.div className="mt-20 lg:mt-24" variants={itemVariants}>
+                    <LayoutGroup>
+                        <div className="flex gap-2 bg-slate-100/80 backdrop-blur-sm p-2 border border-slate-200/80 rounded-2xl max-w-md mx-auto">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`relative flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${activeTab === tab.id ? 'text-white' : 'text-slate-600 hover:text-slate-900'
+                                        }`}
+                                >
+                                    {activeTab === tab.id && (
+                                        <motion.div
+                                            layoutId="active-tab-indicator"
+                                            className="absolute inset-0 bg-indigo-600 rounded-xl"
+                                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                                        />
+                                    )}
+                                    <tab.icon className="relative z-10 w-5 h-5" />
+                                    <span className="relative z-10">{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </LayoutGroup>
+
+                    <div className="mt-8 bg-white/80 backdrop-blur-lg p-6 sm:p-8 border border-slate-200/80 rounded-3xl min-h-[200px] shadow-lg shadow-slate-200/50">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -10, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                {activeTab === 'description' && (
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-4">Product Description</h2>
+                                        <p className="text-slate-600 leading-relaxed">{product.description}</p>
+                                    </div>
+                                )}
+                                {activeTab === 'specs' && product.specs && (
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-4">Technical Specifications</h2>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {Object.entries(product.specs).map(([key, val]) => (
+                                                <div key={key} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                                    <span className="text-slate-500 text-sm">{key}</span>
+                                                    <span className="text-slate-800 font-semibold text-sm text-right">{val}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {activeTab === 'reviews' && (
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-4">Customer Reviews</h2>
+                                        <p className="text-slate-500 italic">No reviews yet. Be the first to share your thoughts!</p>
+                                    </div>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </motion.div>
+            </div>
+        </div>
+    );
+}
+// D:\web-dev\nextjs-tut\e-commerce\app\components\WishlistButton.jsx
+'use client';
+import { FiHeart, FiCheck } from 'react-icons/fi';
+import { useWishlistStore } from '../store/useWishlistStore';
+
+export default function WishlistButton({ product }) {
+    const { wishlist, toggleWishlist } = useWishlistStore();
+    const isWished = wishlist.some(p => p.id === product.id);
+
+    return (
+        <button
+            onClick={() => toggleWishlist(product)}
+            className={`p-2 rounded-full ${isWished ? 'bg-red-500 text-white scale-110' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+        >
+            <FiHeart className={isWished ? 'fill-current' : ''} />
+        </button>
+    );
+}
+// app/login/page.jsx
+'use client';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { loginSchema } from '../lib/schemas';
+import toast from 'react-hot-toast';
+import { useState, useEffect } from 'react';
+import useAuthStore from '../store/useAuthStore';
+
+export default function LoginPage() {
+    const { setAuth } = useAuthStore();
+    const router = useRouter();
+    const [redirectUrl, setRedirectUrl] = useState('/');
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+        setValue,
+    } = useForm({
+        resolver: zodResolver(loginSchema),
+    });
+
+    const [showOtp, setShowOtp] = useState(false);
+
+    // Check for redirect URL on component mount
+    useEffect(() => {
+        const storedRedirectUrl = localStorage.getItem('redirect_after_login');
+        if (storedRedirectUrl) {
+            setRedirectUrl(storedRedirectUrl);
+            // Optional: Show a message to user about redirect
+            toast('You need to log in to add items to cart', { icon: 'ℹ️' });
+        }
+    }, []);
+
+    const onSubmit = async (data) => {
+        try {
+            const body = { ...data, otp: showOtp ? data.otp : undefined };
+            const response = await fetch('/api/users/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                credentials: 'include',
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                if (result.requires2FA) {
+                    setShowOtp(true);
+                    setValue('otp', '');
+                    toast.error('2FA required. Enter the code from your authenticator app.');
+                } else {
+                    throw new Error(result.error || 'Failed to log in');
+                }
+            } else {
+                toast.success('Login successful!');
+
+                // Update auth store
+                setAuth(result.user);
+
+                // Save user data to localStorage
+                localStorage.setItem('auth_user', JSON.stringify(result.user));
+
+                // Notify other components (like Header)
+                window.dispatchEvent(new CustomEvent('authStateChange', {
+                    detail: { type: 'login', user: result.user }
+                }));
+
+                // Clear redirect URL from storage
+                localStorage.removeItem('redirect_after_login');
+
+                // Navigate to redirect URL or homepage
+                router.push(redirectUrl);
+            }
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'An error occurred');
+        }
+    };
+
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-white via-indigo-50 to-blue-100 px-4">
+            <div className="bg-white border border-gray-200 shadow-xl rounded-2xl w-full max-w-md p-8">
+                <h2 className="text-3xl font-bold text-center mb-8 text-gray-800 tracking-tight">🔐 Welcome Back</h2>
+
+                {/* Show redirect message if coming from cart action */}
+                {redirectUrl !== '/' && (
+                    <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-700 text-center">
+                            Please log in to add items to your cart
+                        </p>
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                            id="email"
+                            type="email"
+                            autoComplete="email"
+                            {...register('email')}
+                            className="text-black w-full px-4 py-2 rounded-lg border border-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                            placeholder="you@example.com"
+                        />
+                        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+                    </div>
+
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input
+                            id="password"
+                            type="password"
+                            autoComplete="current-password"
+                            {...register('password')}
+                            className="text-black w-full px-4 py-2 rounded-lg border border-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                            placeholder="••••••••"
+                        />
+                        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+                    </div>
+
+                    {showOtp && (
+                        <div>
+                            <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">2FA Code</label>
+                            <input
+                                id="otp"
+                                type="text"
+                                autoComplete="one-time-code"
+                                {...register('otp', { required: showOtp ? '2FA code is required' : false })}
+                                className="w-full px-4 py-2 rounded-lg border border-gray-300 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                                placeholder="123456"
+                            />
+                            {errors.otp && <p className="text-red-500 text-sm mt-1">{errors.otp.message}</p>}
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full py-3 px-6 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold transition-all duration-300 shadow-md disabled:opacity-60"
+                    >
+                        {isSubmitting ? 'Logging in...' : showOtp ? 'Verify 2FA' : 'Log In'}
+                    </button>
+                </form>
+
+                <p className="mt-6 text-center text-sm text-gray-600">
+                    Don't have an account?{' '}
+                    <a href="/signup" className="text-indigo-600 hover:underline font-medium">
+                        Sign Up
+                    </a>
+                </p>
+            </div>
+        </div>
+    );
+}
+
+'use client';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiUser, FiMapPin, FiPackage, FiEdit3, FiLock, FiLogOut, FiPlus, FiChevronRight } from 'react-icons/fi';
+
+// --- Sample Data ---
+const user = {
+    name: "Alexandra Chen",
+    email: "alex.chen@example.com",
+    joined: "January 2025",
+    phone: "+1 (555) 123-4567",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop"
+};
+
+const addresses = [
+    {
+        id: 1,
+        name: "Alexandra Chen",
+        address: "123 Blossom Lane",
+        city: "San Francisco, CA 94105",
+        country: "United States",
+        phone: "+1 (555) 123-4567",
+        isDefault: true,
+    },
+    {
+        id: 2,
+        name: "Work Office",
+        address: "456 Tech Avenue, Suite 200",
+        city: "Palo Alto, CA 94301",
+        country: "United States",
+        phone: "+1 (555) 987-6543",
+        isDefault: false,
+    }
+];
+
+const orders = [
+    { id: '98765', date: '2025-08-01', status: 'Delivered', total: 115.50, items: 3 },
+    { id: '98766', date: '2025-08-05', status: 'Processing', total: 89.99, items: 1 },
+    { id: '98767', date: '2025-08-06', status: 'Shipped', total: 299.99, items: 1 },
+];
+
+// --- Main Component ---
+export default function ProfilePage() {
+    const [activeTab, setActiveTab] = useState('account');
+
+    const tabs = [
+        { id: 'account', label: 'Account', icon: FiUser },
+        { id: 'address', label: 'Addresses', icon: FiMapPin },
+        { id: 'orders', label: 'Orders', icon: FiPackage },
+    ];
+
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.1, duration: 0.4 } },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, scale: 0.95 },
+        visible: { opacity: 1, scale: 1 },
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+            <motion.div
+                className="max-w-7xl mx-auto"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-10">My Account</h1>
+
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
+                    {/* --- Left Sidebar: User Card & Navigation --- */}
+                    <motion.div variants={itemVariants} className="lg:col-span-1">
+                        <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-8">
+                            <div className="flex flex-col items-center text-center mb-8">
+                                <div className="relative w-24 h-24 mb-4">
+                                    <img src={user.avatar} alt={user.name} className="rounded-full object-cover w-full h-full" />
+                                    <button className="absolute -bottom-1 -right-1 bg-indigo-600 text-white p-2 rounded-full hover:bg-indigo-700 transition-transform hover:scale-110">
+                                        <FiEdit3 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <h2 className="text-xl font-bold text-slate-800">{user.name}</h2>
+                                <p className="text-slate-500 text-sm">{user.email}</p>
+                                <p className="text-xs text-slate-400 mt-2">Member since {user.joined}</p>
+                            </div>
+
+                            <nav className="space-y-2">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
+                                            ? 'bg-indigo-50 text-indigo-700'
+                                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+                                            }`}
+                                    >
+                                        <tab.icon className="w-5 h-5" />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                ))}
+                            </nav>
+
+                            <div className="border-t border-slate-200 mt-6 pt-6 space-y-2">
+                                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-800 transition-colors">
+                                    <FiLock className="w-5 h-5" />
+                                    <span>Change Password</span>
+                                </button>
+                                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+                                    <FiLogOut className="w-5 h-5" />
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* --- Right Content Area --- */}
+                    <div className="lg:col-span-3">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                {activeTab === 'account' && <AccountDetails user={user} />}
+                                {activeTab === 'address' && <AddressBook addresses={addresses} />}
+                                {activeTab === 'orders' && <OrderHistory orders={orders} />}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+
+
+// --- Sub-components for Tabs ---
+
+function AccountDetails({ user }) {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Account Information</h2>
+            <form className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">Full Name</label>
+                        <input type="text" defaultValue={user.name} className="text-slate-500 w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-600 mb-1">Email Address</label>
+                        <input type="email" defaultValue={user.email} className="text-slate-500 w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Phone Number</label>
+                    <input type="tel" defaultValue={user.phone} className="text-slate-500 w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                </div>
+                <div className="pt-4 flex justify-end">
+                    <button type="submit" className="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg shadow-indigo-200">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+function AddressBook({ addresses }) {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-slate-800">Address Book</h2>
+                <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg shadow-indigo-200">
+                    <FiPlus className="w-4 h-4" />
+                    <span>New Address</span>
+                </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {addresses.map(addr => (
+                    <div key={addr.id} className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200 relative">
+                        {addr.isDefault && <span className="absolute top-4 right-4 text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-full">Default</span>}
+                        <h3 className="font-bold text-slate-800 mb-2">{addr.name}</h3>
+                        <address className="text-slate-600 not-italic text-sm space-y-1">
+                            <p>{addr.address}</p>
+                            <p>{addr.city}</p>
+                            <p>{addr.country}</p>
+                            <p className="pt-2">Phone: {addr.phone}</p>
+                        </address>
+                        <div className="mt-6 border-t border-slate-200 pt-4 flex items-center gap-4 text-sm">
+                            <button className="font-medium text-indigo-600 hover:text-indigo-800">Edit</button>
+                            <button className="font-medium text-red-600 hover:text-red-800">Remove</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function OrderHistory({ orders }) {
+    const getStatusChip = (status) => {
+        switch (status) {
+            case 'Delivered': return 'bg-green-100 text-green-800';
+            case 'Processing': return 'bg-amber-100 text-amber-800';
+            case 'Shipped': return 'bg-blue-100 text-blue-800';
+            default: return 'bg-slate-100 text-slate-800';
+        }
+    };
+
+    return (
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-6 sm:p-8">
+                <h2 className="text-2xl font-bold text-slate-800">Order History</h2>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 text-slate-600">
+                        <tr>
+                            <th scope="col" className="px-6 py-3 font-medium">Order ID</th>
+                            <th scope="col" className="px-6 py-3 font-medium">Date</th>
+                            <th scope="col" className="px-6 py-3 font-medium">Status</th>
+                            <th scope="col" className="px-6 py-3 font-medium text-right">Total</th>
+                            <th scope="col" className="px-6 py-3 font-medium"></th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                        {orders.map(order => (
+                            <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-6 py-4 font-mono text-indigo-600">#{order.id}</td>
+                                <td className="px-6 py-4 text-slate-600">{order.date}</td>
+                                <td className="px-6 py-4">
+                                    <span className={`px-2.5 py-1 rounded-full font-medium text-xs ${getStatusChip(order.status)}`}>
+                                        {order.status}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 font-medium text-slate-800 text-right">${order.total.toFixed(2)}</td>
+                                <td className="px-6 py-4 text-right">
+                                    <button className="p-2 text-slate-500 hover:text-indigo-600 rounded-md">
+                                        <FiChevronRight className="w-5 h-5" />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+
+// D:\web-dev\nextjs-tut\e-commerce\app\signup\page.jsx
+'use client';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { signupSchema } from '../lib/schemas';
+import toast from 'react-hot-toast';
+
+export default function SignupPage() {
+    const router = useRouter();
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+    } = useForm({
+        resolver: zodResolver(signupSchema),
+    });
+
+    const onSubmit = async (data) => {
+        try {
+            const response = await fetch('/api/users/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Failed to sign up');
+
+            toast.success('Signup successful! Please log in.');
+            router.push('/login');
+        } catch (error) {
+            toast.error(error.message || 'An error occurred');
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] px-4">
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl w-full max-w-md p-8 text-white">
+                <h2 className="text-3xl font-bold text-center mb-8 tracking-tight">🚀 Create an Account</h2>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    {/* Username */}
+                    <div>
+                        <label htmlFor="username" className="block text-sm text-gray-300 mb-1">Username</label>
+                        <input
+                            id="username"
+                            type="text"
+                            {...register('username')}
+                            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/10 transition"
+                            placeholder="Enter your username"
+                        />
+                        {errors.username && <p className="text-red-400 text-sm mt-1">{errors.username.message}</p>}
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                        <label htmlFor="email" className="block text-sm text-gray-300 mb-1">Email</label>
+                        <input
+                            id="email"
+                            type="email"
+                            {...register('email')}
+                            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/10 transition"
+                            placeholder="Enter your email"
+                        />
+                        {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>}
+                    </div>
+
+                    {/* Password */}
+                    <div>
+                        <label htmlFor="password" className="block text-sm text-gray-300 mb-1">Password</label>
+                        <input
+                            id="password"
+                            type="password"
+                            {...register('password')}
+                            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white/10 transition"
+                            placeholder="Enter your password"
+                        />
+                        {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>}
+                    </div>
+
+                    {/* Submit */}
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-purple-600 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-purple-500/50 text-white font-semibold disabled:opacity-60"
+                    >
+                        {isSubmitting ? 'Signing up...' : 'Sign Up'}
+                    </button>
+                </form>
+
+                <p className="mt-6 text-center text-sm text-gray-400">
+                    Already have an account?{' '}
+                    <a href="/login" className="text-indigo-400 hover:underline">
+                        Log in
+                    </a>
+                </p>
+            </div>
+        </div>
+    );
+}
+// app/wishlist/page.js
+'use client';
+import React from 'react';
+import Link from 'next/link';
+import { useWishlistStore } from '../store/useWishlistStore';
+import useAuthStore from '../store/useAuthStore';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiHeart, FiShoppingCart, FiTrash2, FiArrowRight, FiLogIn } from 'react-icons/fi';
+import { toast, Toaster } from 'react-hot-toast';
+
+// --- Wishlist Product Card Sub-component ---
+const WishlistCard = ({ product, onRemove, onAddToCart }) => {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden group transition-all duration-300 hover:shadow-md">
+            <div className="relative aspect-square">
+                <Link href={`/product/${product.id}`} className="block w-full h-full">
+                    <img
+                        src={product.imageSrc || product.image || product.images?.[0] || '/placeholder.jpg'}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                </Link>
+                <button
+                    onClick={onRemove}
+                    aria-label="Remove from wishlist"
+                    className="absolute top-3 right-3 bg-white/70 backdrop-blur-sm text-red-500 p-2 rounded-full hover:bg-red-500 hover:text-white transition-all duration-300 scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100"
+                >
+                    <FiTrash2 className="w-5 h-5" />
+                </button>
+            </div>
+            <div className="p-4">
+                <h3 className="font-semibold text-slate-800 truncate">{product.name}</h3>
+                <p className="text-slate-600 mt-1">${product.price.toFixed(2)}</p>
+                <button
+                    onClick={onAddToCart}
+                    className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-50 text-indigo-700 font-semibold rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                    <FiShoppingCart className="w-4 h-4" />
+                    <span>Add to Cart</span>
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// --- Main Wishlist Page Component ---
+const WishlistPage = () => {
+    const { wishlistItems, removeFromWishlist, clearWishlist } = useWishlistStore();
+    const { isAuthenticated } = useAuthStore();
+
+    const handleAddToCart = (product) => {
+        const cartProduct = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            imageSrc: product.imageSrc || product.image || product.images?.[0] || '/placeholder.jpg',
+            quantity: 1
+        };
+        // Here you would call your cart store's `addToCart` method
+        // e.g., useCartStore.getState().addToCart(cartProduct);
+        toast.success('Added to cart!', {
+            style: {
+                borderRadius: '12px',
+                background: '#f0fdf4',
+                color: '#16a34a',
+                border: '1px solid #bbf7d0',
+                fontWeight: '600'
+            },
+            iconTheme: {
+                primary: '#16a34a',
+                secondary: '#f0fdf4'
+            },
+            duration: 3000
+        });
+    };
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.07 } },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20, scale: 0.98 },
+        visible: { opacity: 1, y: 0, scale: 1 },
+        exit: { opacity: 0, y: -20, scale: 0.98, transition: { duration: 0.3 } },
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+            <Toaster position="top-center" />
+            <div className="max-w-7xl mx-auto">
+                <motion.div initial="hidden" animate="visible" variants={containerVariants}>
+                    {/* --- Header --- */}
+                    <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-4 mb-10">
+                        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Your Wishlist</h1>
+                        {isAuthenticated && wishlistItems.length > 0 && (
+                            <div className="flex items-center gap-4">
+                                <p className="text-slate-600 font-medium">{wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'}</p>
+                                <button
+                                    onClick={clearWishlist}
+                                    className="text-sm font-medium text-red-500 hover:text-red-700 flex items-center gap-1.5 transition-colors"
+                                >
+                                    <FiTrash2 /> Clear All
+                                </button>
+                            </div>
+                        )}
+                    </motion.div>
+                    {/* --- Wishlist Content --- */}
+                    {!isAuthenticated ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center bg-white rounded-2xl shadow-sm p-12 border border-slate-200/80"
+                        >
+                            <FiLogIn className="mx-auto w-16 h-16 text-slate-300 mb-4" />
+                            <h2 className="text-2xl font-semibold text-slate-800">Please Login</h2>
+                            <p className="mt-2 text-slate-500">You need to be logged in to view your wishlist.</p>
+                            <Link
+                                href="/login"
+                                className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-indigo-200"
+                            >
+                                Go to Login <FiArrowRight />
+                            </Link>
+                        </motion.div>
+                    ) : wishlistItems.length === 0 ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center bg-white rounded-2xl shadow-sm p-12 border border-slate-200/80"
+                        >
+                            <FiHeart className="mx-auto w-16 h-16 text-slate-300 mb-4" />
+                            <h2 className="text-2xl font-semibold text-slate-800">Your wishlist is empty</h2>
+                            <p className="mt-2 text-slate-500">Save items you love for easy access later. They'll show up here.</p>
+                            <Link
+                                href="/products"
+                                className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-300 shadow-md hover:shadow-lg shadow-indigo-200"
+                            >
+                                Browse Products <FiArrowRight />
+                            </Link>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            variants={containerVariants}
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                        >
+
+                            <AnimatePresence>
+                                {wishlistItems.map(product => (
+                                    <motion.div key={product.id} layout variants={itemVariants} exit="exit">
+                                        <WishlistCard
+                                            product={product}
+                                            onRemove={() => removeFromWishlist(product.id)}
+                                            onAddToCart={() => handleAddToCart(product)}
+                                        />
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+
+                        </motion.div>
+                    )}
+                </motion.div>
+            </div>
+        </div>
+    );
+};
+
+export default WishlistPage;

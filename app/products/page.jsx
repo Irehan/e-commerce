@@ -1,14 +1,17 @@
-// app\products\page.jsx
-'use client';
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { getProductsByCategory } from '../lib/utils/productHelpers';
-import ProductCard from '../components/ProductCard';
+// app/products/page.jsx
+"use client"
+
+import { Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import { getProductsByCategory } from "../lib/utils/productHelpers"
+import ProductCard from "../components/ProductCard"
+import SkeletonProductCard from "../components/SkeletonProductCard"
 
 function ProductList() {
-    const searchParams = useSearchParams();
-    const category = searchParams.get('category') || 'all';
-    const products = getProductsByCategory(category === 'all' ? null : category);
+    const searchParams = useSearchParams()
+    const category = searchParams.get("category") || "all"
+    const products = getProductsByCategory(category === "all" ? null : category)
+
     return (
         <div>
             <main className="bg-white">
@@ -17,10 +20,14 @@ function ProductList() {
                         <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                             {category.charAt(0).toUpperCase() + category.slice(1)} Products
                         </h1>
-                        <a href="/products?category=all" className="text-sm font-semibold text-gray-700 hover:text-black hover:underline underline-offset-4 transition-colors">
+                        <a
+                            href="/products?category=all"
+                            className="text-sm font-semibold text-gray-700 hover:text-black hover:underline underline-offset-4 transition-colors"
+                        >
                             Shop All Products
                         </a>
                     </div>
+
                     {products.length > 0 ? (
                         <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
                             {products.map((product) => (
@@ -28,33 +35,31 @@ function ProductList() {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-center text-gray-600">No {category} products available at the moment.</p>
+                        <p className="text-center text-gray-600">
+                            No {category} products available at the moment.
+                        </p>
                     )}
                 </div>
             </main>
         </div>
-    );
+    )
 }
 
 export default function ProductsPage() {
     return (
-        <Suspense fallback={
-            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-                <div className="animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-1/4 mb-12"></div>
+        <Suspense
+            fallback={
+                <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+                    <div className="mb-12 h-8 w-1/4 rounded bg-slate-200 shimmer" />
                     <div className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-                        {[...Array(8)].map((_, i) => (
-                            <div key={i} className="space-y-4">
-                                <div className="bg-gray-200 rounded-lg h-64"></div>
-                                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                            </div>
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <SkeletonProductCard key={i} />
                         ))}
                     </div>
                 </div>
-            </div>
-        }>
+            }
+        >
             <ProductList />
         </Suspense>
-    );
+    )
 }

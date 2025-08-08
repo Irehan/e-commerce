@@ -1,3 +1,4 @@
+// D:\web-dev\nextjs-tut\e-commerce\app\page.js
 import Banner from "./Banner/Banner";
 import BestSelling from "./components/BestSelling";
 import FashionSection from "./components/FashionSection";
